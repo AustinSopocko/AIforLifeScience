@@ -13,6 +13,7 @@ if [[ "$PROFILE" != "smoke" ]]; then
   python -m agepretext.cli index
   python -m agepretext.cli split --check    # splits are frozen; re-derivation must match byte-for-byte
   python -m agepretext.cli bin              # WI-P1: Potter QC, binned tensors, hand-crafted features
+  python -m agepretext.cli gtime            # G-time timing gate (reports projection; never shrinks)
 fi
 python - "$PROFILE" <<'PY'
 import glob, importlib, os, pkgutil, sys

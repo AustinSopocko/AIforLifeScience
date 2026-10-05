@@ -13,7 +13,7 @@ artefacts:
   - {wi: WI-03, path: splits/kapucu_rat_lopo.json,               status: DONE, tracked: true, what: "Kapucu rat leave-one-prep-out manifest"}
   - {wi: WI-03, path: splits/nfa_dev_cv6.json,                   status: DONE, tracked: true, what: "NFA TC 6-fold manifest"}
   - {wi: WI-03, path: splits/nfa_lockbox.json,                   status: DONE, tracked: true, what: "NFA TC dev (12 preps) / NTP-only lockbox (5 preps; 20171011 shared -> dev)"}
-  - {wi: G-time, path: artifacts/g_time.json,                    status: TODO, what: "real-data timing, 4h projection, shrink steps applied"}
+  - {wi: G-time, path: artifacts/g_time.json,                    status: DONE, tracked: false, what: "real-data timing, 4h projection, shrink steps applied"}
   - {wi: WI-05, path: protocol/seals/seal-1.json,                status: TODO, what: "Seal 1"}
   - {wi: WI-P1, path: data/processed/potter_bins/,               status: DONE, tracked: false, what: "Wagenaar binned spike tensors"}
   - {wi: WI-P1, path: data/processed/potter_handcrafted.parquet, status: DONE, tracked: false, what: "mean firing rate + network-burst rate"}
