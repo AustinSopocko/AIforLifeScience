@@ -11,3 +11,4 @@ verified: {dense_cultures: 30, dense_recordings: 527, div_range: [3, 39],
 hierarchy: {prep: batch, plate: culture, well: culture, timepoint: div}
 electrodes: 59               # TBD_WI00: confirm from data (MCS 60 minus reference)
 redistribution: cite_only_download_at_runtime
+qc: {min_duration_s: 600, max_spike_time_s: 3600}   # WI-P1, pre-declared before any model: drop spikes with t > 3600 s (1 corrupt timestamp in 8-3-17); exclude recordings with < 5 full 120 s windows (6 of 527)

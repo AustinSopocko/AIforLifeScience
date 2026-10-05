@@ -11,5 +11,15 @@ cultures-per-batch as listed, DIV in [3, 39]. Cite-only data: files live only un
 """
 
 
+import numpy as np
+import pandas as pd
+
+
+def read_spikes(path: str) -> tuple[np.ndarray, np.ndarray]:
+    """One `.spk.txt.bz2` file -> (times_s float64, channel int16). Channels are hardware IDs 0..59."""
+    d = pd.read_csv(path, sep=r"\s+", header=None, names=["t", "ch"], dtype={"t": np.float64, "ch": np.int16})
+    return d.t.to_numpy(), d.ch.to_numpy()
+
+
 def load(cfg: dict):
-    raise NotImplementedError("WI-P1")
+    raise NotImplementedError("index is built by scripts/build_index.py; spikes via read_spikes()")
