@@ -1,27 +1,38 @@
-"""Command-line entry point (WI-01).
+"""Command-line entry point (WI-01; built incrementally).
 
-Contract
---------
-`agepretext <command> [--profile PROFILE] [options]` with commands:
-
-    recon            run WI-00 scripts, regenerate recon/RECON.md numbers + recon/inventory.json
-    fetch            download sources for the profile, verify sha256 against data/manifests/
-    index            build the RecordingIndex parquet for each source
-    split            (re)generate SplitManifests; with --check, assert equality with committed splits/
-    seal             canonicalise + hash the protocol, write protocol/seals/seal-N.json, git-tag it
-    train            P: encoder cross-fit (4 folds by batch) + final; N: ridge cross-fit (6 folds by prep) + final
-    eval             run baselines and claims; --phase {exploratory,confirmatory,reproduction}
-    figures          regenerate every figure in the viz.figures registry
-    report           write report/generated/numbers.tex and build the PDF
-    demo             drive the live demo sequence (scripts/demo.py)
-    reproduce        equivalent to reproduce.sh
-    ledger verify    validate hash chain + schema; --staged for pre-commit; --against REF for CI
-
-Every command that reads data first calls validation.guards; every command that produces a
-result appends a ledger row (including on error). Exit codes: 0 ok, 2 invariant violation,
-3 protocol not sealed / dirty tree, 4 ledger verification failure.
+Implemented: `ledger verify [--staged] [--against REF]`, `fetch`, `recon`, `index`, `split [--check]`,
+`bin`, `gtime`. Every other command in PLAN.md raises NotImplementedError until its work item lands.
+Exit codes: 0 ok, 2 invariant violation, 3 protocol not sealed / dirty tree, 4 ledger verification failure.
 """
+import argparse
+import runpy
+import sys
+
+SCRIPTS = {"fetch": "scripts/fetch_all.py", "recon": "scripts/recon_inventory.py", "index": "scripts/build_index.py",
+           "split": "scripts/make_splits.py", "bin": "scripts/potter_bin.py", "gtime": "scripts/gtime.py"}
 
 
 def main(argv: list[str] | None = None) -> int:
-    raise NotImplementedError("WI-01")
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:2] == ["ledger", "verify"]:
+        from agepretext.validation.ledger import LedgerError, verify
+        ap = argparse.ArgumentParser(prog="agepretext ledger verify")
+        ap.add_argument("--staged", action="store_true")
+        ap.add_argument("--against")
+        a = ap.parse_args(argv[2:])
+        try:
+            n = verify(staged=a.staged, against_ref=a.against)
+        except LedgerError as e:
+            print(f"ledger verify: FAIL: {e}")
+            return 4
+        print(f"ledger verify: OK ({n} rows, hash chain intact)")
+        return 0
+    if argv and argv[0] in SCRIPTS:
+        sys.argv = [SCRIPTS[argv[0]], *argv[1:]]
+        runpy.run_path(SCRIPTS[argv[0]], run_name="__main__")
+        return 0
+    raise NotImplementedError(f"agepretext {' '.join(argv)}: not built yet (see PLAN.md §7)")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

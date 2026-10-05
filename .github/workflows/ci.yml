@@ -10,5 +10,6 @@ jobs:
         with: {python-version: "3.11"}
       - run: pip install -q -r requirements.lock && pip install -q -e . --no-deps
       - run: pytest -q -rN --no-header
+      - run: python -m agepretext.cli ledger verify
       - run: bash reproduce.sh --profile smoke
       - run: bash reproduce.sh --profile mvr

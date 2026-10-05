@@ -4,6 +4,7 @@
 # Nothing is computed yet; every unbuilt artefact is listed as TODO. No network, no data access.
 set -euo pipefail
 cd "$(dirname "$0")"
+python -m agepretext.cli ledger verify
 PROFILE=mvr
 [[ "${1:-}" == "--profile" ]] && PROFILE="${2:-mvr}"
 python - "$PROFILE" <<'PY'
