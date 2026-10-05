@@ -1,0 +1,7 @@
+# CI profile: <5 min, 2% subsample, no lockbox access, ledger rows tagged phase=infrastructure.
+include: [data/nfa.yaml, features/nfa17.yaml, model/feature_mlp.yaml, train/pretext.yaml, eval/baselines.yaml]
+subsample_fraction: 0.02
+ensemble_members: 1
+bootstrap_resamples: 200
+permutations: 50
+lockbox: false

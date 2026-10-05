@@ -1,0 +1,67 @@
+# Machine-readable preregistration. DRAFT — not sealed.
+# Evaluators (src/agepretext/eval/verdicts.py) read thresholds ONLY from this file.
+# Values marked `TBD_WI00` are placeholders to be fixed after the WI-00 kill-gate and decisions D2-D6.
+schema_version: 1
+status: draft            # draft -> sealed (WI-05). After sealing, edits require an amendment entry.
+
+data:
+  primary_source: nfa_2018
+  dev_subset: TC
+  lockbox_subset: NTP
+  unit_of_analysis: recording          # well x DIV
+  cluster_unit: prep                   # D4
+  age_target: log_div
+
+statistics:
+  bootstrap: {method: cluster_percentile, unit: prep, n_resamples: 4000, ci: 0.95, seed: 20261004}
+  permutation: {n_permutations: 1000, scheme: within_prep, seed: 20261005}
+
+hypotheses:
+  H-AGE:
+    metric: [r2_log_div, mae_log_div]
+    supports_if:
+      r2_lower_bound_gt: 0.30                     # D5
+      mae_vs_BL1_upper_bound_rel_le: 0.10         # D5
+    on_kill: use_BL1_age_model_for_B
+
+  H-A:
+    task: TBD_WI00                                # D3: T1 recommended
+    alternative_task: TBD_WI00                    # D3: T2 recommended
+    k_values: [2, 5, 10, 20, 50, 100, all]
+    draws_per_k: 50
+    metric: auroc
+    primary_test: {type: non_inferiority, ours_k: 10, competitor_k: 50, competitors: [BL-2, BL-3], margin: 0.02}
+    ceiling_rule: {baseline: BL-2, k: 10, auroc_ge: 0.95, action: switch_to_alternative_task}
+    bl3_fixed_epochs: 200
+
+  H-B:
+    non_cytotoxic_ab_ge: 0.8                      # D5
+    calibration: {ci_contains_zero: true, abs_mean_delta_lt: 0.10}
+    detection:
+      null: control_vs_control_within_plate
+      fpr: 0.05
+      dose_rule: highest_non_cytotoxic
+      comparator: BL-5
+      primary_test: {type: non_inferiority, margin: 0.10}
+      secondary_test: {type: superiority}
+    dose_dependence: {statistic: median_spearman_dose_vs_delta_auc, direction: negative, gating: wording_only}
+    sensitivity: [lowest_dose_reference, cytotoxic_separate, plate_level_clusters]
+
+  H-C:
+    primary:
+      target: plate_within_prep
+      wells: controls_only
+      representation: embedding_z16
+      probe: multinomial_logistic_innercv
+      split: leave_one_div_out                    # SplitPurpose.IDENTITY_PROBE
+      statistic: excess_balanced_accuracy
+      supports_if:
+        permutation_p_gt: 0.05
+        excess_point_lt: 0.10
+        amplification_vs_inputs_upper_le: 0.02
+    validity_gate:
+      canary: {type: per_plate_offset, magnitude_sd: 0.5, n_seeds: 20, required_power: 0.8}
+      on_fail: INCONCLUSIVE
+    secondary: {target: prep_across_preps, age_matched: true, gating: false}
+
+baselines: [BL-0, BL-1, BL-2, BL-3, BL-4, BL-5, BL-6, BL-7]

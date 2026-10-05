@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agepretext"
+version = "0.0.0"
+description = "Age-pretext encoder for neural MEA electrophysiology (planning skeleton)"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "numpy", "pandas", "pyarrow", "scipy", "scikit-learn",
+  "torch",            # CPU wheel; pinned in requirements.lock
+  "matplotlib", "pyyaml", "h5py", "openpyxl",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "hypothesis", "pre-commit", "pip-tools"]
+
+[project.scripts]
+agepretext = "agepretext.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

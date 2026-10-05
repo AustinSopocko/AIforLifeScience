@@ -1,0 +1,24 @@
+# Canonical well-level feature set. Final membership of cv.* fixed by WI-00 fact F3.
+features:
+  - {name: meanfiringrate,               transform: log1p}
+  - {name: burst.per.min,                transform: log1p}
+  - {name: mean.isis,                    transform: log1p, nan_means: undefined}
+  - {name: per.spikes.in.burst,          transform: logit_pct}
+  - {name: mean.dur,                     transform: log1p, nan_means: undefined}
+  - {name: mean.IBIs,                    transform: log1p, nan_means: undefined}
+  - {name: nAE,                          transform: fraction_of_electrodes}
+  - {name: nABE,                         transform: fraction_of_electrodes}
+  - {name: ns.n,                         transform: log1p}
+  - {name: ns.peak.m,                    transform: fraction_of_electrodes, nan_means: undefined}
+  - {name: ns.durn.m,                    transform: log1p, nan_means: undefined}
+  - {name: ns.percent.of.spikes.in.ns,   transform: logit_pct}
+  - {name: ns.mean.insis,                transform: log1p, nan_means: undefined}
+  - {name: ns.durn.sd,                   transform: log1p, nan_means: undefined}
+  - {name: ns.mean.spikes.in.ns,         transform: log1p, nan_means: undefined}
+  - {name: r,                            transform: identity}
+  - {name: Mutual.Information,           transform: log1p}
+optional_pending_F3: [cv.time, cv.network]
+undefined_indicator: true      # one binary column per nan_means: undefined feature
+imputation: train_fold_median
+standardise: train_fold_only
+logit_eps: 1.0e-3

@@ -1,0 +1,10 @@
+# WI-02: the ledger append-only hook rejects any non-additive change to ledger/results.jsonl.
+repos:
+  - repo: local
+    hooks:
+      - id: ledger-append-only
+        name: ledger append-only + hash chain
+        entry: agepretext ledger verify --staged
+        language: system
+        files: ^ledger/results\.jsonl$
+        pass_filenames: false

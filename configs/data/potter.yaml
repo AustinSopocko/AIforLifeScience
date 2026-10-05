@@ -1,0 +1,10 @@
+# Wagenaar, Pine & Potter 2006 (stretch S-1/S-2). Cite-only: never mirrored.
+name: potter_2006
+index_urls:
+  dense:  https://potterlab.bme.gatech.edu/development-data/html/daily.spont.dense.text.html
+  sparse: https://potterlab.bme.gatech.edu/development-data/html/daily.spont.sparse.text.html
+  small:  https://potterlab.bme.gatech.edu/development-data/html/daily.spont.small.text.html
+file_pattern: "{batch}-{culture}-{div}.spk.txt.bz2"   # rows: "<time_s> <channel>"
+hierarchy: {prep: batch, plate: culture, well: culture, timepoint: div}
+electrodes_per_well: 60      # TBD_WI00 (F5)
+redistribution: cite_only_download_at_runtime

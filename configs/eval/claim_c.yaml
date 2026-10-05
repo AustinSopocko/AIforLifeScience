@@ -1,0 +1,5 @@
+primary: {target: plate_within_prep, wells: controls_only, split: leave_one_div_out}
+secondary: {target: prep_across_preps, age_matched: true}
+representations: [embedding_z16, inputs, inputs_pca16, random_init_encoder]
+permutations: 1000
+canary: {magnitudes_sd: [0.25, 0.5, 1.0], seeds: 20, retrain: true}

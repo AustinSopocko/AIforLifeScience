@@ -1,0 +1,8 @@
+optimizer: adamw
+lr: 1.0e-3
+epochs: 300
+early_stopping: {monitor: inner_grouped_val_mae, patience: 30}   # inner split is by prep too
+batch_size: 256
+wells: controls_only            # INVARIANT-2
+deterministic: true
+seed: 0

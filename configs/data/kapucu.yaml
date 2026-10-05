@@ -1,0 +1,10 @@
+# Kapucu et al. 2022 (stretch S-3/S-5). CC BY 4.0. NEVER download raw HDF5 (2.3 TiB): spike CSVs only.
+name: kapucu_2022
+doi: 10.12751/g-node.wvr3jf
+repo: https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset
+allowed_globs: ["*_spikes.csv", "expLog.csv", "noisy_electrodes_*.csv"]
+forbidden_globs: ["*.h5"]
+plates: {hPSC: [hPSC_MEA1, hPSC_MEA2, hPSC_MEA3, hPSC_MEA4, hPSC_MEA5], rat: [Rat_MEA1, Rat_MEA2, Rat_MEA3, Rat_MEA4]}
+hierarchy: {prep: plate, plate: plate, well: well, timepoint: div}
+electrodes_per_well: {12well: 64, 48well: 16}
+redistribution: allowed_with_attribution

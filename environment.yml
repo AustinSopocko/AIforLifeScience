@@ -1,0 +1,10 @@
+# Pinned versions are resolved in WI-01 into requirements.lock (pip-tools, --generate-hashes).
+name: agepretext
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - ffmpeg          # video frame -> MP4 (viz/animate.py)
+  - latexmk         # report build
+  - pip
+  - pip:
+      - -r requirements.lock

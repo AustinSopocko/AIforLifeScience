@@ -1,0 +1,4 @@
+include: [data/nfa.yaml, features/nfa17.yaml, model/feature_mlp.yaml, train/pretext.yaml,
+          eval/baselines.yaml, eval/claim_a.yaml, eval/claim_b.yaml, eval/claim_c.yaml]
+splits: {dev: splits/nfa_dev_cv6.json, lockbox: splits/nfa_lockbox.json}
+lockbox: true

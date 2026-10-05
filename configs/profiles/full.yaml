@@ -1,0 +1,3 @@
+# MVR + stretch sources. Stretch results are evaluated against, never instead of, the MVR.
+include: [profiles/mvr.yaml, data/potter.yaml, data/epameadev.yaml, data/kapucu.yaml, model/set_encoder.yaml]
+stretch: [S-1, S-2, S-3, S-6]

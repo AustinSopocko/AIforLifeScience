@@ -1,0 +1,8 @@
+BL-0: {type: predict_mean}
+BL-1: {type: ridge, features: [meanfiringrate, burst.per.min]}
+BL-2: {type: linear_all_inputs}
+BL-3: {type: same_arch_from_scratch, epochs: 200}
+BL-4: {type: frozen_random_init_encoder}
+BL-5: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
+BL-6: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf}
+BL-7: {type: epa_published_hitcalls, role: external_reference}

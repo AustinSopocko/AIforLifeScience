@@ -1,0 +1,15 @@
+# EPA Network Formation Assay 2018 release (MVR primary). Verified facts: PLAN.md §3.
+name: nfa_2018
+base_url: https://pasteur.epa.gov/uploads/10.23719/1503191/
+files:
+  - {name: NTP_TC_Analysis.zip, bytes: 159560650, sha256: TBD_WI00}
+members:                      # only these archive members are read; DEPRECATED* folders are forbidden
+  TC:  {features: "New TC/sourceData/AllCombined_ToxCast_20180923.csv", mi: "New TC/sourceData/AllCombined_ToxCast_MI_updated_20180923.csv",
+        ab: "New TC/sourceData/Toxcast_AB_full_20180923.csv", ldh: "New TC/sourceData/Toxcast_LDH_full_20180923.csv"}
+  NTP: {features: "New NTP/sourceData/ALL_NTP.csv", mi: "New NTP/sourceData/ALL_NTP_MI.csv",
+        ab: "New NTP/sourceData/ALL_NTP_AB.csv", ldh: "New NTP/sourceData/ALL_NTP_LDH.csv"}
+hierarchy: {prep: date, plate: Plate.SN, well: well, timepoint: DIV}
+control_rule: "dose == 0"
+electrodes_per_well: 16
+licence: EPA ScienceHub (verify text in WI-00)
+redistribution: TBD_WI00
