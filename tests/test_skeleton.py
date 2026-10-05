@@ -13,7 +13,8 @@ MODULES = [
     "agepretext.models.set_encoder", "agepretext.models.heads", "agepretext.models.ensemble",
     "agepretext.train.pretext", "agepretext.train.crossfit", "agepretext.eval.bootstrap", "agepretext.eval.nulls",
     "agepretext.eval.verdicts", "agepretext.eval.age", "agepretext.eval.baselines", "agepretext.eval.claim_a_fewshot",
-    "agepretext.eval.claim_b_deviation", "agepretext.eval.claim_c_probe", "agepretext.validation.ledger",
+    "agepretext.eval.claim_b_deviation", "agepretext.eval.identity_probe",
+    "agepretext.eval.claim_c1_nfa", "agepretext.eval.claim_c2_wagenaar", "agepretext.validation.ledger",
     "agepretext.validation.protocol", "agepretext.validation.guards", "agepretext.validation.prereg",
     "agepretext.viz.style", "agepretext.viz.trajectory", "agepretext.viz.fewshot_curve", "agepretext.viz.probe",
     "agepretext.viz.animate", "agepretext.viz.figures",
@@ -35,7 +36,8 @@ def test_prereg_has_no_absolute_claim_thresholds():
     """D5: every non-C hypothesis is decided by the relative rule against named gating baselines."""
     pre = yaml.safe_load((ROOT / "protocol/prereg.yaml").read_text())
     for hid, h in pre["hypotheses"].items():
-        if hid == "H-C":
+        if hid in ("H-C1", "H-C2"):
+            assert h["verdict"]["rule"] == "identity_rule" and "canary" in h
             continue
         assert h.get("gating_baselines"), f"{hid} has no gating baselines"
         assert "metric" in h and h["metric"]["direction"] in {"higher", "lower"}
@@ -62,6 +64,28 @@ def test_workitem_deps_exist_and_acyclic():
 
     for n in items:
         visit(n)
+
+
+def test_case_table_covers_all_eight_outcomes():
+    """D16: every combination of A/B/C holds|falls maps to exactly one pre-declared case."""
+    import itertools
+    pre = yaml.safe_load((ROOT / "protocol/prereg.yaml").read_text())
+    cases = {k: v for k, v in pre["case_number"].items() if k != "collapse_rule"}
+    combos = {(v["A"], v["B"], v["C"]) for v in cases.values()}
+    assert combos == set(itertools.product(["holds", "falls"], repeat=3))
+
+
+def test_ledger_rows_chain():
+    """Structural hash-chain check; full schema verification is `agepretext ledger verify` (WI-02)."""
+    import hashlib
+    import json
+    raw = (ROOT / "ledger/results.jsonl").read_bytes().split(b"\n")
+    lines = [l for l in raw if l]
+    prev = "0" * 64
+    for line in lines:
+        row = json.loads(line)
+        assert row["prev_row_sha256"] == prev
+        prev = hashlib.sha256(line + b"\n").hexdigest()
 
 
 def test_ledger_genesis_row_is_the_a13_disclosure():

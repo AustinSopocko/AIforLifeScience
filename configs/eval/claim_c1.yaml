@@ -1,0 +1,9 @@
+# PRIMARY Claim C: artefact-only probe on the Claim B readout. Same cells, same prep, different plate.
+corpus: nfa_all_18_preps
+representation: {primary: oof_delta_trajectory_controls, reported: transformed_inputs_25d}
+target: plate
+within: prep
+split: leave_one_well_out_within_plate     # SplitPurpose.IDENTITY_PROBE (exception 2)
+permutations: {n: 1000, level: well_within_prep}
+canary: {artefact: per_plate_feature_offset, offset_sd_multiple: 0.5, sd_from: within_plate_control_sd_tc_train,
+         refit_pipeline: true, seeds: 20, alpha: 0.05, required_power: 0.8}

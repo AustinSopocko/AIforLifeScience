@@ -1,4 +1,4 @@
-"""Demo shot 1 / report F4: NFA age-deviation trajectories (WI-O1, consumes WI-N3 output).
+"""Demo shot 1 / report F7: NFA age-deviation trajectories (WI-O1, consumes WI-N3 output).
 
 Contract
 --------

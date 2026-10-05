@@ -5,6 +5,6 @@ weight_decay: 1.0e-3
 epochs: 40                 # fixed; no early stopping -> no tuning surface
 batch_size: 64
 crossfit: {folds: 4, unit: batch, batches_per_fold: 2}
-final_model: all_batches   # used for Claim C primary probe and S-1
+final_model: all_batches   # the only encoder used by Claim A (frozen transfer) and C2
 deterministic: true
 seed: 0

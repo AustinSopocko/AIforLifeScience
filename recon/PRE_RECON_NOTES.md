@@ -30,3 +30,15 @@ curl -sSL https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset/raw/mas
   | head -5    # 9,369,904 bytes; 601,688 lines; header Channel,Time
 ```
 These checks are recorded in ledger row 1 (A13 disclosure).
+
+## Recon closure, 2026-10-05: Kapucu rat preps (ledger row 2)
+
+```bash
+B=https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset
+for d in Data/Rat_MEA1/Rat_MEA1_spikes_noise_explogs Data/Rat_MEA2_Pharmacology Data/PCA/Rat_MEA1_PCA \
+         Data/PCA/Rat_MEA3_PCA/Rat_MEA3_PCA_spikes_noise_explogs Data/PCA/Rat_MEA4_PCA/Rat_MEA4_PCA_spikes_noise_explogs; do
+  curl -sS "$B/src/master/$d" | grep -oE "href=\"[^\"]+\""; done     # filenames only; no spike file opened
+```
+
+Result: preps 190617 (10 DIVs), 50618 (DIV 22 only), 250417 (21/24/28) and 31017 (24/28/31).
+Discovery is closed after this.

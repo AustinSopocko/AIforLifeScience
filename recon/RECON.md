@@ -1,4 +1,4 @@
-# WI-00 Data Reconnaissance Report (TEMPLATE, v2)
+# WI-00 Data Reconnaissance Report (TEMPLATE, v3; discovery CLOSED, reproduce only)
 
 > Fill every ⟨…⟩ with evidence: a number, plus the script and line that produced it.
 > `make recon` must regenerate every number here from a clean environment.
@@ -17,9 +17,9 @@
 | Gate | Verdict | Evidence |
 |---|---|---|
 | K1 encoder corpus (≥8 Potter dense batches parse; each ≥2 cultures with ≥5 DIVs) | ⟨PASS/FAIL⟩ | ⟨⟩ |
-| K2 Claim B (NFA available, licensable, chronic dosing) | ⟨PASS/FAIL⟩ | ⟨⟩ |
-| K3 Claim A task (≥3 (t, t+7±1) pairs per culture for ≥20 cultures) | ⟨PASS/FAIL → alt target⟩ | ⟨⟩ |
-| G-time (synthetic full-size encoder fit ≤ 10 CPU-min) | ⟨PASS/SLIM⟩ | ⟨⟩ |
+| K2 Claim B / C1 (NFA available, licensable, chronic dosing; C1 needs controls only) | ⟨PASS/FAIL⟩ | ⟨⟩ |
+| K3 Claim A (≥8 wells per Kapucu rat prep with spikes at both ends of the overlap-window pair) | ⟨PASS/FAIL → alt target⟩ | ⟨⟩ |
+| G-time (run after WI-P1 on REAL Potter tensors: projected total training ≤ 4 h, else shrink ladder) | ⟨PASS/SHRUNK: steps⟩ | ⟨⟩ |
 
 Signed off by operator: ⟨name, date⟩ → if all pass, proceed to WI-05. Otherwise go to the
 fallback named in `PLAN.md` §4.
@@ -30,7 +30,7 @@ fallback named in `PLAN.md` §4.
 |---|---|---|---|
 | NFA 2018 | `DIV` column | ⟨⟩ | |
 | Potter 2006 (CORE) | filename `<batch>-<culture>-<DIV>.spk.txt.bz2` | ⟨⟩ | dense only |
-| Kapucu 2022 (stretch) | filename `_DIV<n>_spikes.csv` (verified) | ⟨⟩ | prep = culture-date token; check vs expLog |
+| Kapucu 2022 rat (CORE, Claim A) / hPSC (stretch) | filename `_DIV<n>_spikes.csv` (verified) | ⟨⟩ | prep = culture-date token; check vs expLog (A7). Rat preps per PLAN §2.3 |
 
 ## R2 — Age × culture distribution
 

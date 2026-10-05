@@ -8,4 +8,8 @@ augment: {electrode_subsample_min: 16, electrode_subsample_max: all}
 use_electrode_coordinates: false
 age_head: linear_per_species
 ensemble: {members: 3, bagging_unit: batch}
-g_time_slimming: {trigger_cpu_minutes_per_fit: 10, bin_ms: 400, epochs: 25}   # pre-declared, applied before Seal #1 only
+g_time:                       # D8: real data, before Seal #1
+  measure: one_forward_backward_on_one_potter_culture_all_recordings
+  project: [crossfit_4_folds_x_members, final_x_members, canary_10_retrains, kapucu_bl_a2_fits]
+  max_projected_wallclock_h: 4
+  shrink_ladder: [{bin_ms: 400}, {channels: [8, 16, 16]}, {epochs: 25}, {members: 1}]   # apply in order until <= 4h; ledger each step

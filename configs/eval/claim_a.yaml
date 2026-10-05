@@ -1,10 +1,15 @@
-corpus: potter_dense
+corpus: kapucu_rat
+encoder: final_wagenaar_frozen
+folds: {type: leave_one_prep_out, preps: ["190617", "250417", "31017"]}
 task: forecast_log1p_network_burst_rate
 horizon_days: {target: 7, window: [6, 8]}
 alternative_task_if_K3: forecast_log_mean_firing_rate
-labelled_unit: culture
-k_values: [1, 2, 4, 8, all]
+labelled_unit: well
+k_values: [1, 2, 4, 8, 16, all]
 draws_per_k: 30
+bl_a2_seeds_per_draw: 5
+eval_pairs: {t_in: [21, 24]}
 head: {type: ridge, alpha: 1.0}
 inputs_all_methods: [div]
 competitors: [BL-A0, BL-A1, BL-A2, BL-A3]
+inference: worst_fold          # D17 open

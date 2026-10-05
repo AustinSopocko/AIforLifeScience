@@ -1,16 +1,21 @@
-"""Claim A: held-out-batch forecasting few-shot engine (WI-P5). configs/eval/claim_a.yaml.
+"""Claim A: cross-lab few-shot transfer engine, Wagenaar -> Kapucu rat (WI-P5). configs/eval/claim_a.yaml.
 
 Contract
 --------
-Pairs: within each Potter culture, (recording at DIV t, target = log1p network-burst rate at DIV t')
-with t' - t in [6, 8], nearest to 7 (alternative target if K3 fires: log mean firing rate at t').
-`run_fewshot(oof_z, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]` yields events INCREMENTALLY
-(for demo shot 2). For each fold, k in {1,2,4,8,all}, draw in 1..30: sample k labelled CULTURES from the
-fold's train batches only (SplitPurpose.FEWSHOT); fit each method; evaluate MAE on all pairs of the
-fold's held-out batches. Methods: ours ([frozen out-of-fold z, DIV] -> ridge), BL-A0, BL-A1, BL-A2,
-BL-A3 — every method at every k; every method receives DIV.
-`summarise(events, prereg) -> dict`: curve with batch-clustered CIs (culture-clustered sensitivity) and
-the primary verdict (UB(ours@k=4) < min baseline point MAE @k=all) via eval.verdicts.
+- Encoder: the final Wagenaar encoder, frozen; never trained or tuned on Kapucu.
+- Folds: leave-one-prep-out over Kapucu rat preps 190617, 250417, 31017 (SplitPurpose.FEWSHOT; the
+  labelled pool is the two training preps' wells only).
+- Pairs: within each well, (recording at DIV t, target = log1p network-burst rate at DIV t'),
+  t' - t in [6, 8]. Training uses all pairs of labelled wells; evaluation uses the held-out prep's
+  pairs with t in {21, 24} (common overlap window).
+- `run_fewshot(z_kapucu, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]` yields events
+  INCREMENTALLY for k in {1, 2, 4, 8, 16, all} x 30 draws x 3 folds (demo shot 2 is built from them).
+  Methods at EVERY k, all receiving DIV: ours ([frozen z, DIV] -> ridge), BL-A0, BL-A1, BL-A2
+  (same arch from scratch, 5 seeds per draw), BL-A3.
+- `summarise(events, prereg) -> dict`: full curve per fold with well-level bootstrap bands, and the
+  H-A verdict via eval.verdicts using the inference rule in prereg.yaml (default worst_fold: in EVERY
+  held-out prep, UB_well(MAE ours@4) < min baseline point MAE @all). Also reports zero-shot age MAE
+  of the Wagenaar age head on Kapucu rat per prep (non-gating).
 """
 from dataclasses import dataclass
 from typing import Iterator
@@ -21,11 +26,12 @@ class FewShotEvent:
     k: int | str
     method: str
     draw: int
+    seed: int
     fold: str
     mae: float
 
 
-def run_fewshot(oof_z, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]:
+def run_fewshot(z_kapucu, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]:
     raise NotImplementedError("WI-P5")
 
 

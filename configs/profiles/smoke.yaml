@@ -1,7 +1,8 @@
 # CI profile: <5 min. 2 Potter batches x 4 DIVs, NFA 2% subsample; ensemble 1; few resamples; no lockbox.
-include: [data/potter.yaml, data/nfa.yaml, features/potter_handcrafted.yaml, features/nfa17.yaml,
+include: [data/potter.yaml, data/kapucu.yaml, data/nfa.yaml, features/potter_handcrafted.yaml, features/nfa17.yaml,
           model/set_encoder.yaml, model/ridge_age.yaml, train/pretext.yaml, eval/baselines.yaml]
 potter_subset: {batches: 2, divs_per_culture: 4}
+kapucu_subset: {preps: ["250417", "31017"], wells: 2}
 nfa_subsample_fraction: 0.02
 ensemble_members: 1
 epochs: 2

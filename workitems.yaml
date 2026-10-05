@@ -1,49 +1,55 @@
-# Machine-readable work-item DAG, v2. Mirrors PLAN.md §7-9. hours = focused engineering hours.
-# pipeline: core (shared) | P (Wagenaar spike encoder: A, C) | N (NFA features: B) | out | stretch
-budget_hours: {engineering: 25.5, video_report_fixed: 10.0, total: 35.5}
-deadline: 2026-10-10
+# Machine-readable work-item DAG, v3. Mirrors PLAN.md §7-9. hours = focused engineering hours.
+# pipeline: core | P (Wagenaar encoder -> Kapucu rat: age, A, C2) | N (NFA: B, C1) | out | stretch
+budget_hours: {engineering: 25.75, video_report_fixed: 10.0, total: 35.75}
+hard_cutoff: "2026-10-09T23:59:00+01:00"   # UK (BST) = 22:59 UTC
+target_submission: "2026-10-09T20:00:00+01:00"
 items:
-  WI-00: {title: Recon + kill-gate,                                 pipeline: core, hours: 2.0, critical: true, deps: []}
-  WI-01: {title: Scaffold / env / CLI / CI,                         pipeline: core, hours: 0.5, critical: true, deps: []}
-  WI-02: {title: Ledger + seal + guards,                            pipeline: core, hours: 1.5, critical: true, deps: [WI-01]}
-  WI-03: {title: Index + splits + invariants (both corpora),        pipeline: core, hours: 1.5, critical: true, deps: [WI-02]}
-  WI-04: {title: Cluster bootstrap / nulls / relative-rule verdicts, pipeline: core, hours: 1.5, critical: true, deps: [WI-02]}
-  WI-05: {title: Prereg final + G-time check + Seal 1,              pipeline: core, hours: 0.5, critical: true, deps: [WI-00, WI-03, WI-04]}
-  WI-P1: {title: Potter loader / binning / hand-crafted features,   pipeline: P,    hours: 2.0, critical: true, deps: [WI-03]}
-  WI-P2: {title: Set encoder + age training + cross-fit + final,    pipeline: P,    hours: 3.0, critical: true, deps: [WI-P1, WI-05], background_cpu_hours: 1.5}
-  WI-P3: {title: H-AGE-P + BL-0/BL-1,                               pipeline: P,    hours: 0.5, critical: true, deps: [WI-P2, WI-04]}
-  WI-P4: {title: Claim C batch probe + canary,                      pipeline: P,    hours: 2.5, critical: true, deps: [WI-P2, WI-04], background_cpu_hours: 1.2}
-  WI-P5: {title: Claim A held-out-batch forecasting engine,         pipeline: P,    hours: 3.0, critical: true, deps: [WI-P2, WI-04]}
-  WI-N1: {title: NFA ingestion + transforms,                        pipeline: N,    hours: 1.0, critical: false, deps: [WI-03]}
-  WI-N2: {title: Ridge age model cross-fit + H-AGE-N,               pipeline: N,    hours: 0.5, critical: false, deps: [WI-N1, WI-04, WI-05]}
-  WI-N3: {title: Claim B readout + nulls + baselines + sensitivity, pipeline: N,    hours: 2.5, critical: false, deps: [WI-N2]}
-  WI-O1: {title: Renderers (3 shots) / figure registry / macros,    pipeline: out,  hours: 2.0, critical: true, deps: [WI-04, WI-P4, WI-P5, WI-N3]}
-  WI-O2: {title: Seal 2 + NTP lockbox + reproduce.sh,               pipeline: out,  hours: 1.0, critical: true, deps: [WI-P3, WI-P4, WI-P5, WI-N3, WI-O1]}
-  WI-V:  {title: Demo video,                                        pipeline: out,  hours: 4.0, critical: true, fixed: true, deps: [WI-O1, WI-O2]}
-  WI-R:  {title: Technical report,                                  pipeline: out,  hours: 5.0, critical: true, fixed: true, deps: [WI-O1, WI-O2]}
-  WI-W:  {title: README + Kaggle writeup + packaging,               pipeline: out,  hours: 1.0, critical: true, fixed: true, deps: [WI-V, WI-R]}
-  S-1:   {title: Kapucu hPSC transfer demo + rat cross-lab check,   pipeline: stretch, hours: 2.0, critical: false, deps: [WI-P2]}
-  S-2:   {title: NFA plate-within-prep probe (D13),                 pipeline: stretch, hours: 1.0, critical: false, deps: [WI-N1, WI-04]}
-  S-3:   {title: NFA cytotoxicity prediction,                       pipeline: stretch, hours: 2.0, critical: false, deps: [WI-N2]}
-  S-4:   {title: Canary at 3 magnitudes,                            pipeline: stretch, hours: 0.5, critical: false, deps: [WI-P4]}
-  S-5:   {title: Potter sparse/small cultures in pretext,           pipeline: stretch, hours: 1.5, critical: false, deps: [WI-P2]}
-  S-6:   {title: Grouped conformal intervals,                       pipeline: stretch, hours: 1.0, critical: false, deps: [WI-P2]}
-  S-7:   {title: Docker image,                                      pipeline: stretch, hours: 1.0, critical: false, deps: [WI-O2]}
-# "critical: false" on WI-N* means off the critical path (runs in CPU-bound gaps), NOT optional; B is in the MVR.
-cut_order:
-  - {id: CUT-1, cut: all stretch items}
-  - {id: CUT-2, cut: animated shots -> static frames + live terminal, saves_h: 1.0}
-  - {id: CUT-3, cut: "Claim A k-grid -> {2,4,all}, draws 30 -> 15", saves_h: 0.5}
-  - {id: CUT-4, cut: Potter ensemble M 3 -> 1, saves_h: cpu_only}
-  - {id: CUT-5, cut: Claim B drop BL-B3 + dose-response, saves_h: 0.75}
-  - {id: CUT-6, cut: NFA lockbox -> 18-prep cross-fit (needs operator sign-off; contradicts D2), saves_h: 0.5}
-  - {id: CUT-7, cut: drop Claim B entirely, saves_h: 4.0}
-never_cut: [canary, ledger, seals, cluster_bootstrap, claim_C]
-schedule:
-  2026-10-05: [WI-00, WI-01, WI-02, WI-03, WI-04, WI-05]
-  2026-10-06: [WI-P1, WI-P2, WI-N1]
-  2026-10-07: [WI-P3, WI-P4, WI-N2, WI-N3]
-  2026-10-08: [WI-P4, WI-P5, WI-O1, WI-O2]
-  2026-10-09: [WI-V, WI-R]
-  2026-10-10: [WI-R, WI-W]
-checkpoints: {G-sched: {date: 2026-10-07, rule: "if >3h behind, apply cut_order from top; ledger it"}}
+  WI-00: {title: Recon reproducibility (discovery closed),            pipeline: core, hours: 1.0,  deps: []}
+  WI-01: {title: Scaffold / env / CLI / CI,                           pipeline: core, hours: 0.5,  deps: []}
+  WI-02: {title: Ledger + seal + guards,                              pipeline: core, hours: 1.5,  deps: [WI-01]}
+  WI-03: {title: Index + splits + invariants + probe exceptions,      pipeline: core, hours: 1.5,  deps: [WI-02]}
+  WI-04: {title: Bootstrap / nulls / identity probe / verdicts / case, pipeline: core, hours: 1.5, deps: [WI-02]}
+  WI-P1: {title: Potter loader / binning / hand-crafted,              pipeline: P,    hours: 2.0,  deps: [WI-03]}
+  G-time: {title: Real-data timing + 4h projection + shrink ladder,   pipeline: P,    hours: 0.25, deps: [WI-P1]}
+  WI-05: {title: Prereg final (D17) + Seal 1,                         pipeline: core, hours: 0.5,  deps: [WI-00, WI-03, WI-04, G-time]}
+  WI-P2: {title: Encoder age training + 4-fold cross-fit + final,     pipeline: P,    hours: 3.0,  deps: [WI-P1, WI-05], background_cpu: true}
+  WI-P3: {title: H-AGE-P,                                             pipeline: P,    hours: 0.5,  deps: [WI-P2, WI-04]}
+  WI-P4: {title: C2 Wagenaar batch probe + 10 canary retrains,        pipeline: P,    hours: 2.0,  deps: [WI-P2, WI-04], background_cpu: true}
+  WI-K1: {title: Kapucu rat loader (3 preps) + pairs,                 pipeline: P,    hours: 1.0,  deps: [WI-03, WI-P1]}
+  WI-P5: {title: Claim A cross-lab full few-shot curve + worst-fold,  pipeline: P,    hours: 3.0,  deps: [WI-P2, WI-K1, WI-04]}
+  WI-N1: {title: NFA ingestion + transforms,                          pipeline: N,    hours: 1.0,  deps: [WI-03]}
+  WI-N2: {title: Ridge age cross-fit + H-AGE-N,                       pipeline: N,    hours: 0.5,  deps: [WI-N1, WI-04, WI-05]}
+  WI-N3: {title: Claim B readout + baselines + sensitivity,           pipeline: N,    hours: 2.0,  deps: [WI-N2]}
+  WI-N4: {title: C1 NFA plate-within-prep probe + 20 canaries,        pipeline: N,    hours: 2.0,  deps: [WI-N2, WI-04]}
+  WI-O1: {title: Frame renderers / figures F1-F8 / verdict+case macros, pipeline: out, hours: 1.0, deps: [WI-P4, WI-P5, WI-N3, WI-N4]}
+  WI-O2: {title: Seal 2 + NTP lockbox (B, C1) + reproduce.sh,         pipeline: out,  hours: 1.0,  deps: [WI-P3, WI-O1]}
+  WI-V:  {title: Demo video,                                          pipeline: out,  hours: 4.0,  fixed: true, deps: [WI-O1, WI-O2]}
+  WI-R:  {title: Report (protocol-first, verdict-switched),           pipeline: out,  hours: 5.0,  fixed: true, deps: [WI-O1, WI-O2]}
+  WI-W:  {title: README + Kaggle writeup + submit,                    pipeline: out,  hours: 1.0,  fixed: true, deps: [WI-V, WI-R]}
+  S-1: {title: Kapucu hPSC demo (non-inferential),                    pipeline: stretch, hours: 1.5, deps: [WI-K1, WI-P2]}
+  S-2: {title: Wagenaar-internal forecasting (D17 option c),          pipeline: stretch, hours: 1.5, deps: [WI-P2]}
+  S-3: {title: NFA cytotoxicity prediction,                           pipeline: stretch, hours: 2.0, deps: [WI-N2]}
+  S-4: {title: Canary at 3 magnitudes (C1, C2),                       pipeline: stretch, hours: 0.5, deps: [WI-P4, WI-N4]}
+  S-5: {title: Potter sparse/small in pretext,                        pipeline: stretch, hours: 1.5, deps: [WI-P2]}
+  S-6: {title: Grouped conformal intervals,                           pipeline: stretch, hours: 1.0, deps: [WI-P2]}
+  S-7: {title: Docker image,                                          pipeline: stretch, hours: 1.0, deps: [WI-O2]}
+critical_path: [WI-01, WI-02, WI-03, WI-P1, G-time, WI-05, WI-P2, WI-P5, WI-O1, WI-O2, WI-V, WI-R, WI-W]
+cut_order:   # strictly in this order; B is 7th, A is 8th (last)
+  1: drop all stretch items
+  2: "Claim A draws 30 -> 15 and BL-A2 seeds 5 -> 2 (k-grid kept)"
+  3: Potter ensemble M 3 -> 1
+  4: drop BL-B3 (reported-only)
+  5: drop Claim B lowest-dose-reference sensitivity
+  6: NFA lockbox -> 18-prep cross-fit (operator sign-off required; contradicts D2)
+  7: drop Claim B (WI-N3 only; WI-N1/N2/N4 kept for C1)
+  8: drop Claim A (WI-K1, WI-P5)
+never_cut: [C1 + canary, C2 canary, ledger, seals, cluster_bootstrap, full few-shot curve if A runs]
+schedule:   # UK dates
+  2026-10-05: [WI-00, WI-01, WI-02, WI-03, WI-04]
+  2026-10-06: [WI-P1, G-time, WI-05, WI-P2, WI-K1]
+  2026-10-07: [WI-P3, WI-P4, WI-N1, WI-N2, WI-N3, "WI-R draft §1-4 (1h)"]
+  2026-10-08: [WI-P5, WI-N4, WI-O1, WI-O2, "WI-V asset capture (0.5h)"]
+  2026-10-09: ["WI-V (3.5h)", "WI-R (4h)", WI-W]
+checkpoints:
+  G-sched-1: {at: "2026-10-07T22:00+01:00", rule: "if >2h behind, apply cut_order from top; ledger it"}
+  G-sched-2: {at: "2026-10-08T18:00+01:00", rule: "if Seal 2 not reachable by 23:00, apply cuts 6-8 as needed; ledger it"}

@@ -12,9 +12,11 @@ Enforcement contract
   partition, a recording's prep is unassigned, or the manifest sha256 mismatches its contents.
   Called by every dataset constructor, trainer, transform.fit and evaluator before data is touched.
 - `assert_controls_only(index_subset)` raises if any row has dose > 0 (NFA age training).
-- `SplitPurpose.IDENTITY_PROBE` is the ONLY purpose that shares preps across partitions (Claim C
-  splits by culture within batch). `require_purpose_caller` raises unless called from
-  `agepretext.eval.claim_c_probe`; each use is recorded in the ledger row.
+- `SplitPurpose.IDENTITY_PROBE` is the ONLY purpose that shares preps across partitions, with exactly two
+  sanctioned split specs: C2 cultures-within-batch (Wagenaar) and C1 wells-within-plate (NFA controls).
+  `require_purpose_caller` raises unless called from `agepretext.eval.identity_probe`; each use is
+  recorded in the ledger row.
+- Kapucu data never enters encoder training (asserted in train.pretext).
 - No public function in the package accepts raw row indices to define a split.
 """
 from enum import Enum
@@ -25,10 +27,10 @@ class InvariantViolation(RuntimeError):
 
 
 class SplitPurpose(Enum):
-    PRETEXT_CROSSFIT = "pretext_crossfit"      # grouped by prep, K folds (Potter 4, NFA 6)
+    PRETEXT_CROSSFIT = "pretext_crossfit"      # grouped by prep, K folds (Potter 4, NFA 6; Kapucu rat LOPO 3)
     LOCKBOX = "lockbox"                        # NFA: TC dev vs NTP lockbox
     FEWSHOT = "fewshot"                        # Claim A labelled pool: train-fold preps only
-    IDENTITY_PROBE = "identity_probe"          # sole exception: cultures split within batch
+    IDENTITY_PROBE = "identity_probe"          # sole exception: C2 cultures-within-batch, C1 wells-within-plate
 
 
 def assert_group_disjoint(manifest, index) -> None:

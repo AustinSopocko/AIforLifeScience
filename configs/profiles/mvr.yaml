@@ -1,5 +1,7 @@
-include: [data/potter.yaml, data/nfa.yaml, features/potter_handcrafted.yaml, features/nfa17.yaml,
+include: [data/potter.yaml, data/kapucu.yaml, data/nfa.yaml, features/potter_handcrafted.yaml, features/nfa17.yaml,
           model/set_encoder.yaml, model/ridge_age.yaml, train/pretext.yaml,
-          eval/baselines.yaml, eval/claim_a.yaml, eval/claim_b.yaml, eval/claim_c.yaml]
-splits: {potter: splits/potter_cv4.json, nfa_dev: splits/nfa_dev_cv6.json, nfa_lockbox: splits/nfa_lockbox.json}
+          eval/baselines.yaml, eval/claim_a.yaml, eval/claim_b.yaml, eval/claim_c1.yaml, eval/claim_c2.yaml]
+kapucu_scope: rat_preps_claim_a
+splits: {potter: splits/potter_cv4.json, kapucu_rat: splits/kapucu_rat_lopo.json,
+         nfa_dev: splits/nfa_dev_cv6.json, nfa_lockbox: splits/nfa_lockbox.json}
 lockbox: true

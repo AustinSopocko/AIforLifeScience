@@ -1,16 +1,22 @@
-# Kapucu et al. 2022 — stretch S-1 (non-inferential human transfer demo). CC BY 4.0. Spike CSVs only; *.h5 forbidden.
+# Kapucu et al. 2022. CC BY 4.0. Spike CSVs only; *.h5 forbidden (2.3 TiB raw).
+# CORE (rat): Claim A cross-lab transfer target. STRETCH (hPSC): S-1 non-inferential demo.
 name: kapucu_2022
 doi: 10.12751/g-node.wvr3jf
 raw_base: https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset/raw/master/
 allowed_globs: ["*_spikes.csv", "*_expLog.csv", "noisy_electrodes_*.csv"]
 forbidden_globs: ["*.h5"]
 spike_csv_format: {header: [Channel, Time], channel: "<well>_<electrode>", time_unit: s}
-verified_preps:   # culture-date token -> plates, DIVs (PLAN §2.2)
-  hPSC_20517:  {plates: [hPSC_MEA1, hPSC_MEA2], divs: [3, 7, 10, 14, 17, 21, 24, 28, 31, 35, 38, 42, 45, 48, 51, 56, 59, 63, 66]}
-  hPSC_171017: {plates: [hPSC_MEA4], divs: [21, 24, 28]}
-  hPSC_21018:  {plates: [hPSC_MEA5], divs: [70, 73, 77]}
-  Rat_190617:  {plates: [Rat_MEA1],  divs: [2, 7, 10, 14, 17, 21, 24, 28, 31, 35]}
-  Rat_250417:  {plates: [Rat_MEA3],  divs: [21, 24, 28]}
-  Rat_31017:   {plates: [Rat_MEA4],  divs: [24, 28, 31]}
-inferential_use: false       # one prep carries the whole hPSC age series; see PLAN §2.2
+rat_preps_claim_a:          # recon closure, ledger row 2 (filenames only)
+  "190617": {plate: Rat_MEA1, dir: Data/Rat_MEA1/Rat_MEA1_spikes_noise_explogs, divs: [2, 7, 10, 14, 17, 21, 24, 28, 31, 35]}
+  "250417": {plate: Rat_MEA3, dir: Data/PCA/Rat_MEA3_PCA/Rat_MEA3_PCA_spikes_noise_explogs, divs: [21, 24, 28]}
+  "31017":  {plate: Rat_MEA4, dir: Data/PCA/Rat_MEA4_PCA/Rat_MEA4_PCA_spikes_noise_explogs, divs: [24, 28, 31]}
+rat_preps_excluded:
+  "50618":  {plate: Rat_MEA2_Pharmacology, divs: [22], reason: single_timepoint_no_pairs}
+hpsc_preps_stretch:
+  "20517":  {plates: [hPSC_MEA1, hPSC_MEA2], divs: [3, 7, 10, 14, 17, 21, 24, 28, 31, 35, 38, 42, 45, 48, 51, 56, 59, 63, 66]}
+  "171017": {plates: [hPSC_MEA4], divs: [21, 24, 28]}
+  "21018":  {plates: [hPSC_MEA5], divs: [70, 73, 77]}
+electrodes_per_well: 64
+wells_per_rat_plate: 12      # A14: verify in WI-00 (K3)
+inferential: {rat: true_with_D17_rule, hpsc: false}
 redistribution: allowed_with_attribution

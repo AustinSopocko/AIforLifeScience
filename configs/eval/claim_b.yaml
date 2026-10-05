@@ -1,4 +1,5 @@
 corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
+credibility_dependency: {hypothesis: H-C1, claim_falls_if: REFUTES}
 reference: same_plate_controls
 sensitivity_reference: lowest_dose_wells
 summary: trapezoid_auc_over_div

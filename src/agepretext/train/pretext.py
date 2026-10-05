@@ -8,8 +8,9 @@ Contract
   3. fit ClusterBaggedEnsemble(SetEncoder + AgeHead) for exactly cfg.epochs (no early stopping,
      no tuning surface), sampling cfg.windows_per_recording_per_epoch windows per recording
   4. return FoldArtefact(member weights, seeds, train batches, config sha256)
-`train_final(...)` trains on all 8 batches (Claim C primary probe, S-1).
-`train_with_canary(..., canary_seed)` identical, after applying eval.claim_c_probe.inject_canary to
+`train_final(...)` trains on all 8 batches: the only encoder used by Claim A (frozen transfer) and C2.
+Asserts no Kapucu recording is present in any training input.
+`train_with_canary(..., canary_seed)` identical, after applying eval.claim_c2_wagenaar.inject_noisy_electrode_canary to
 training spikes (Claim C validity gate).
 Artefacts go to artifacts/<protocol_hash[:8]>/potter/... and are listed with sha256 in the ledger row.
 """

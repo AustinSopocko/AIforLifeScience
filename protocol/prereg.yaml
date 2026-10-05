@@ -1,9 +1,9 @@
-# Machine-readable preregistration v2. DRAFT — not sealed.
+# Machine-readable preregistration v3. DRAFT — not sealed.
 # eval/verdicts.py reads decision rules ONLY from this file. No absolute claim thresholds (D5):
 # every claim except C is decided by the relative rule below.
-schema_version: 2
+schema_version: 3
 status: draft
-open_decisions: [D2b, D3prime, D13, D14, D15]
+open_decisions: [D17]
 
 decision_rule:
   name: relative_bound_vs_best_baseline_point
@@ -15,8 +15,8 @@ decision_rule:
 statistics:
   bootstrap: {method: cluster_percentile, n_resamples: 4000, ci: 0.95, seed: 20261005, min_clusters: 5}
   permutation: {n_permutations: 1000, seed: 20261006}
-  headline_cluster_unit: {potter: batch, nfa: prep}
-  sensitivity_cluster_unit: {potter: culture, nfa: plate}
+  headline_cluster_unit: {potter: batch, kapucu_rat: prep, nfa: prep}
+  sensitivity_cluster_unit: {potter: culture, kapucu_rat: well, nfa: plate}
 
 hypotheses:
   H-AGE-P:
@@ -32,17 +32,25 @@ hypotheses:
     gating_baselines: [BL-0, BL-1]
     on_refute: use_BL-1_age_model_for_H-B
   H-A:
-    corpus: potter_dense
+    corpus: kapucu_rat
+    encoder: final_wagenaar_frozen
+    folds: {type: leave_one_prep_out, preps: ["190617", "250417", "31017"], excluded: {"50618": single_timepoint}}
     task: forecast_log1p_network_burst_rate
     horizon_days: {target: 7, window: [6, 8]}
     alternative_task_if_K3: forecast_log_mean_firing_rate
-    labelled_unit: culture
-    k_values: [1, 2, 4, 8, all]
+    labelled_unit: well
+    k_values: [1, 2, 4, 8, 16, all]
+    full_curve_required: true
     draws_per_k: 30
+    bl_a2_seeds_per_draw: 5
+    train_pairs: all_pairs_of_labelled_wells
+    eval_pairs: {t_in: [21, 24]}
     all_methods_receive_div: true
     metric: {name: mae, direction: lower}
-    comparison: {claim: {method: ours, k: 4}, baselines_at_k: all}     # D15
+    comparison: {claim: {method: ours, k: 4}, baselines_at_k: all}
     gating_baselines: [BL-A0, BL-A1, BL-A2, BL-A3]
+    inference: {rule: worst_fold, interval_unit_within_fold: well, require_all_folds: true}   # D17 OPEN: alternatives pooled_wells | wagenaar_internal_gating
+    reported: [zero_shot_age_mae_per_prep]
   H-B:
     corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
     non_cytotoxic: {rule: ab_ge_control_percentile, percentile: 5}
@@ -53,11 +61,30 @@ hypotheses:
     calibration_gate: {statistic: heldout_control_mean_delta, require: ci_contains_zero}
     gating_baselines: [BL-B1, BL-B2]                                   # D14
     reported_baselines: [BL-B3]
-    sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate, dose_response]
-  H-C:
+    sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate]
+    credibility_dependency: {hypothesis: H-C1, claim_falls_if: REFUTES}
+  H-C1:
+    role: primary_claim_C
+    corpus: nfa_all_18_preps
+    representation: {primary: oof_delta_trajectory_controls, reported: transformed_inputs_25d}
+    probe: {type: multinomial_logistic_innercv, target: plate, within: prep, split: leave_one_well_out_within_plate}
+    statistic: excess_balanced_accuracy
+    permutation_level: well_within_prep
+    canary:
+      artefact: per_plate_feature_offset
+      offset_sd_multiple_of_within_plate_control_sd: 0.5
+      sd_estimated_on: nfa_tc_train_preps
+      refit_pipeline: true
+      seeds: 20
+      detection_alpha: 0.05
+      required_power: 0.8
+    verdict: {rule: identity_rule}
+    scope_statement: certifies_readout_pipeline_not_encoder
+  H-C2:
+    role: primary_wording_only
     corpus: potter_dense
     stratify_by_div_bin: true
-    representation: {primary: final_encoder_all_batches, secondary: out_of_fold}
+    representation: final_encoder_all_batches
     probe: {type: multinomial_logistic_innercv, target: batch, split: culture_within_batch}
     statistic: excess_balanced_accuracy
     permutation_level: culture
@@ -70,12 +97,29 @@ hypotheses:
       seeds: 10
       detection_alpha: 0.05
       required_power: 0.8
-    verdict:
-      SUPPORTS: "canary_power >= 0.8 and real_batch_p >= 0.05"
-      REFUTES: "canary_power >= 0.8 and real_batch_p < 0.05"
-      INCONCLUSIVE: "canary_power < 0.8"
-    reported: [handcrafted_probe, random_init_probe]
-    secondary_if_D13: nfa_plate_within_prep_probe
+    verdict: {rule: identity_rule}
+    reported: [handcrafted_probe]
+
+identity_rule:
+  SUPPORTS: "canary_power >= required_power and real_identity_p >= detection_alpha"
+  REFUTES: "canary_power >= required_power and real_identity_p < detection_alpha"
+  INCONCLUSIVE: "canary_power < required_power"
+
+claim_status:          # PLAN.md §6b; 'falls' = anything other than holds
+  A: "H-A == SUPPORTS"
+  B: "H-B == SUPPORTS and H-C1 != REFUTES"
+  C: "H-C1 == SUPPORTS"
+  C_wording_from: H-C2
+case_number:
+  "1": {A: holds, B: holds, C: holds}
+  "2": {A: falls, B: holds, C: holds}
+  "3": {A: holds, B: falls, C: holds}
+  "4": {A: holds, B: holds, C: falls}
+  "5": {A: falls, B: falls, C: holds}
+  "6": {A: falls, B: holds, C: falls}
+  "7": {A: holds, B: falls, C: falls}
+  "8": {A: falls, B: falls, C: falls}
+  collapse_rule: "if H-C1 == REFUTES then B falls (case 4 -> 7, case 6 -> 8)"
 
 baselines:
   BL-0:  {type: predict_train_mean}

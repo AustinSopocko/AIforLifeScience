@@ -1,11 +1,13 @@
-"""Demo shot 3 / report F3: batch probe fails while the canary is caught (WI-O1, consumes WI-P4 output).
+"""Demo shot 3 / report F5: Claim C panel — C1 (NFA plate within prep) and C2 (Wagenaar batch), each
+beside its canary (WI-O1, consumes WI-N4 and WI-P4 output).
 
 Contract
 --------
-`render_probe_panel(probe_results, canary_results, overlay=None) -> Frame`: left = real-batch confusion
-matrix (8 x 8) on primary z for the pre-declared DIV bin (the bin with the most recordings); middle =
-the same probe after canary retraining (seed 0); right = culture-level permutation null with the observed
-excess balanced accuracy marked, and canary power (k/10 seeds detected) against the 0.8 requirement.
+`render_probe_panel(c1, c2, overlay=None) -> Frame`: left half = C1: plate confusion on Δ for the
+pre-declared prep (the prep with most plates; tie -> lowest id) beside its canary (seed 0), null histogram
+with observed excess balanced accuracy, canary power k/20 vs 0.8. Right half = C2: 8 x 8 batch confusion on
+z for the DIV bin with most recordings beside its canary, null, power k/10 vs 0.8. Verdict badges from
+eval.verdicts; C1 labelled PRIMARY.
 Overlay text (seal hash, `ledger verify` output) is passed in, never computed here.
 """
 

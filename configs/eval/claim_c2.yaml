@@ -1,8 +1,10 @@
+# PRIMARY (wording-only) Claim C: encoder batch probe on Wagenaar; confounded with culture biology.
 corpus: potter_dense
 div_bins: [[3, 9], [10, 16], [17, 23], [24, 39]]
 target: batch
-split: culture_within_batch          # SplitPurpose.IDENTITY_PROBE
-representations: {primary: final_encoder_all_batches, secondary: out_of_fold, reported: [handcrafted, random_init_encoder]}
+split: culture_within_batch                # SplitPurpose.IDENTITY_PROBE (exception 1)
+representation: final_encoder_all_batches
+reported: [handcrafted]
 permutations: {n: 1000, level: culture}
 canary: {artefact: batch_specific_noisy_electrodes, electrode_fraction: 0.10, added_rate: corpus_median_electrode_rate_per_div_bin,
          inject_into: training_data, retrain: true, seeds: 10, alpha: 0.05, required_power: 0.8}

@@ -5,13 +5,14 @@ Contract
 - `make_group_splits(index, *, unit, purpose, seed, n_folds=None, lockbox_subset=None)` sorts
   unique group IDs, permutes them with numpy.random.default_rng(seed), assigns partitions, and
   returns a frozen SplitManifest. Identical inputs -> identical manifest bytes.
-- `unit` is "prep" (Potter batch / NFA culture date) for every claim split. "culture"/"plate" only
+- `unit` is "prep" (Potter batch / Kapucu culture-date token / NFA culture date) for every claim split. "culture"/"plate" only
   for declared sensitivity analyses.
 - Potter: purpose=PRETEXT_CROSSFIT, 4 folds x 2 batches -> splits/potter_cv4.json.
 - NFA (D2): purpose=LOCKBOX puts subset NTP in `lockbox`, TC in `dev` -> splits/nfa_lockbox.json;
   purpose=PRETEXT_CROSSFIT splits TC preps into 6 folds x 2 -> splits/nfa_dev_cv6.json.
-- purpose=IDENTITY_PROBE (Claim C only): within each batch, cultures are split into probe-train /
-  probe-test; requires >= 2 cultures per batch (asserted; true for all 8 dense batches).
+- Kapucu rat: leave-one-prep-out over 190617 / 250417 / 31017 -> splits/kapucu_rat_lopo.json.
+- purpose=IDENTITY_PROBE (Claim C only, via eval.identity_probe): C2 splits cultures within batch
+  (>= 2 cultures per batch asserted; true for all 8 dense batches); C1 splits control wells within plate.
 - Manifests are committed; `agepretext split --check` re-derives and compares byte-for-byte.
 """
 from dataclasses import dataclass, field

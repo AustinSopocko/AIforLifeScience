@@ -1,3 +1,4 @@
 # MVR + stretch. Stretch results are reported against, never instead of, the MVR.
-include: [profiles/mvr.yaml, data/kapucu.yaml]
+include: [profiles/mvr.yaml]
+kapucu_scope: [rat_preps_claim_a, hpsc_preps_stretch]
 stretch: [S-1, S-2, S-3, S-4]
