@@ -1,0 +1,8 @@
+# Hand-crafted Potter features for baselines BL-1 / BL-A1 and the Claim A target. Fixed before Seal #1; never tuned.
+mean_firing_rate: {definition: spikes / (active_electrodes * duration_s), active_electrode_min_rate_hz: 0.1}
+network_burst:
+  bin_ms: 100
+  threshold: "max(4 * median_bin_count, spikes_on >= 0.25 * active_electrodes)"
+  merge: consecutive_suprathreshold_bins
+rate_unit: per_minute
+transform: log1p

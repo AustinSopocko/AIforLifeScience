@@ -1,67 +1,89 @@
-# Machine-readable preregistration. DRAFT — not sealed.
-# Evaluators (src/agepretext/eval/verdicts.py) read thresholds ONLY from this file.
-# Values marked `TBD_WI00` are placeholders to be fixed after the WI-00 kill-gate and decisions D2-D6.
-schema_version: 1
-status: draft            # draft -> sealed (WI-05). After sealing, edits require an amendment entry.
+# Machine-readable preregistration v2. DRAFT — not sealed.
+# eval/verdicts.py reads decision rules ONLY from this file. No absolute claim thresholds (D5):
+# every claim except C is decided by the relative rule below.
+schema_version: 2
+status: draft
+open_decisions: [D2b, D3prime, D13, D14, D15]
 
-data:
-  primary_source: nfa_2018
-  dev_subset: TC
-  lockbox_subset: NTP
-  unit_of_analysis: recording          # well x DIV
-  cluster_unit: prep                   # D4
-  age_target: log_div
+decision_rule:
+  name: relative_bound_vs_best_baseline_point
+  higher_is_better: "lower_bound(claim) > max(point(baseline) for baseline in gating_baselines)"
+  lower_is_better:  "upper_bound(claim) < min(point(baseline) for baseline in gating_baselines)"
+  otherwise: REFUTES
+  if_bound_not_computable: INCONCLUSIVE
 
 statistics:
-  bootstrap: {method: cluster_percentile, unit: prep, n_resamples: 4000, ci: 0.95, seed: 20261004}
-  permutation: {n_permutations: 1000, scheme: within_prep, seed: 20261005}
+  bootstrap: {method: cluster_percentile, n_resamples: 4000, ci: 0.95, seed: 20261005, min_clusters: 5}
+  permutation: {n_permutations: 1000, seed: 20261006}
+  headline_cluster_unit: {potter: batch, nfa: prep}
+  sensitivity_cluster_unit: {potter: culture, nfa: plate}
 
 hypotheses:
-  H-AGE:
-    metric: [r2_log_div, mae_log_div]
-    supports_if:
-      r2_lower_bound_gt: 0.30                     # D5
-      mae_vs_BL1_upper_bound_rel_le: 0.10         # D5
-    on_kill: use_BL1_age_model_for_B
-
+  H-AGE-P:
+    corpus: potter_dense
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]
+    report_by_div_bin: [[3, 9], [10, 16], [17, 23], [24, 39]]
+    on_refute: attach_to_dependent_claims
+  H-AGE-N:
+    corpus: nfa_tc
+    wells: controls_only
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]
+    on_refute: use_BL-1_age_model_for_H-B
   H-A:
-    task: TBD_WI00                                # D3: T1 recommended
-    alternative_task: TBD_WI00                    # D3: T2 recommended
-    k_values: [2, 5, 10, 20, 50, 100, all]
-    draws_per_k: 50
-    metric: auroc
-    primary_test: {type: non_inferiority, ours_k: 10, competitor_k: 50, competitors: [BL-2, BL-3], margin: 0.02}
-    ceiling_rule: {baseline: BL-2, k: 10, auroc_ge: 0.95, action: switch_to_alternative_task}
-    bl3_fixed_epochs: 200
-
+    corpus: potter_dense
+    task: forecast_log1p_network_burst_rate
+    horizon_days: {target: 7, window: [6, 8]}
+    alternative_task_if_K3: forecast_log_mean_firing_rate
+    labelled_unit: culture
+    k_values: [1, 2, 4, 8, all]
+    draws_per_k: 30
+    all_methods_receive_div: true
+    metric: {name: mae, direction: lower}
+    comparison: {claim: {method: ours, k: 4}, baselines_at_k: all}     # D15
+    gating_baselines: [BL-A0, BL-A1, BL-A2, BL-A3]
   H-B:
-    non_cytotoxic_ab_ge: 0.8                      # D5
-    calibration: {ci_contains_zero: true, abs_mean_delta_lt: 0.10}
-    detection:
-      null: control_vs_control_within_plate
-      fpr: 0.05
-      dose_rule: highest_non_cytotoxic
-      comparator: BL-5
-      primary_test: {type: non_inferiority, margin: 0.10}
-      secondary_test: {type: superiority}
-    dose_dependence: {statistic: median_spearman_dose_vs_delta_auc, direction: negative, gating: wording_only}
-    sensitivity: [lowest_dose_reference, cytotoxic_separate, plate_level_clusters]
-
+    corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
+    non_cytotoxic: {rule: ab_ge_control_percentile, percentile: 5}
+    null: control_vs_control_within_plate
+    fpr: 0.05
+    dose_rule: highest_non_cytotoxic
+    metric: {name: detection_rate, direction: higher}
+    calibration_gate: {statistic: heldout_control_mean_delta, require: ci_contains_zero}
+    gating_baselines: [BL-B1, BL-B2]                                   # D14
+    reported_baselines: [BL-B3]
+    sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate, dose_response]
   H-C:
-    primary:
-      target: plate_within_prep
-      wells: controls_only
-      representation: embedding_z16
-      probe: multinomial_logistic_innercv
-      split: leave_one_div_out                    # SplitPurpose.IDENTITY_PROBE
-      statistic: excess_balanced_accuracy
-      supports_if:
-        permutation_p_gt: 0.05
-        excess_point_lt: 0.10
-        amplification_vs_inputs_upper_le: 0.02
-    validity_gate:
-      canary: {type: per_plate_offset, magnitude_sd: 0.5, n_seeds: 20, required_power: 0.8}
-      on_fail: INCONCLUSIVE
-    secondary: {target: prep_across_preps, age_matched: true, gating: false}
+    corpus: potter_dense
+    stratify_by_div_bin: true
+    representation: {primary: final_encoder_all_batches, secondary: out_of_fold}
+    probe: {type: multinomial_logistic_innercv, target: batch, split: culture_within_batch}
+    statistic: excess_balanced_accuracy
+    permutation_level: culture
+    canary:
+      artefact: batch_specific_noisy_electrodes
+      electrode_fraction: 0.10
+      added_rate: corpus_median_electrode_rate_per_div_bin
+      inject_into: training_data
+      retrain: true
+      seeds: 10
+      detection_alpha: 0.05
+      required_power: 0.8
+    verdict:
+      SUPPORTS: "canary_power >= 0.8 and real_batch_p >= 0.05"
+      REFUTES: "canary_power >= 0.8 and real_batch_p < 0.05"
+      INCONCLUSIVE: "canary_power < 0.8"
+    reported: [handcrafted_probe, random_init_probe]
+    secondary_if_D13: nfa_plate_within_prep_probe
 
-baselines: [BL-0, BL-1, BL-2, BL-3, BL-4, BL-5, BL-6, BL-7]
+baselines:
+  BL-0:  {type: predict_train_mean}
+  BL-1:  {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate]}
+  BL-A0: {type: ridge, inputs: [div]}
+  BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
+  BL-A2: {type: same_arch_from_scratch, epochs: 40}
+  BL-A3: {type: frozen_random_init_encoder_plus_ridge}
+  BL-B1: {type: age_residual, age_model: BL-1}
+  BL-B2: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
+  BL-B3: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf, gating: false}

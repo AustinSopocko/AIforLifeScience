@@ -1,29 +1,28 @@
-"""Claim C: identity probes with canary power calibration (WI-09). configs/eval/claim_c.yaml.
+"""Claim C: batch-identity probe with canary validity gate (WI-P4). configs/eval/claim_c.yaml.
 
 Contract
 --------
-- C-primary `probe_plate_within_prep(reprs, index)`: per prep, control recordings only;
-  multinomial logistic probe (inner-CV C) predicting plate_id; leave-one-DIV-out within plate via
-  SplitPurpose.IDENTITY_PROBE (the sole sanctioned exception to INVARIANT-1, caller-checked);
-  statistic = excess balanced accuracy vs 1,000 within-prep permutations, pooled over preps and
-  held-out DIVs. Run on each representation in cfg.representations (z16, inputs, inputs PCA-16,
-  random-init encoder) to compute the amplification comparison.
-- C-secondary `probe_prep_identity(...)`: prep identity across preps, age-matched; reported only.
-- Canary `canary_power(index, features, magnitudes_sd, seeds)`: inject a per-plate random-direction
-  offset of the given SD into inputs, re-run feature transform + pretext training + probe end to
-  end, return power per magnitude. Validity gate per prereg.
-Outputs (artifacts/.../claim_c/): confusion matrices, null distributions, observed statistics,
-canary power curve — the inputs of viz.probe (demo shot 3).
+- `probe_batch(z, index, cfg) -> dict`: within each DIV bin, multinomial logistic probe (inner-CV C)
+  predicting batch; split = cultures within batch (SplitPurpose.IDENTITY_PROBE, caller-checked);
+  statistic = excess balanced accuracy pooled over bins; p from 1,000 culture-level permutations
+  (eval.nulls.grouped_label_permutation). Run on primary z (final encoder, all batches), secondary z
+  (out-of-fold), and reported comparators (hand-crafted features, random-init encoder).
+- `inject_canary(spikes, index, seed, cfg) -> spikes'`: per batch, a seeded random 10% of electrodes get
+  extra Poisson spikes at the corpus median per-electrode rate for the recording's DIV bin.
+- `canary_power(index, spikes, cfg) -> dict`: for each of 10 seeds: inject into training spikes,
+  train.pretext.train_with_canary, re-embed, probe_batch; power = share of seeds with p < 0.05.
+- Verdict via eval.verdicts (H-C rule). Outputs (artifacts/.../potter/claim_c/): confusion matrices,
+  null distributions, observed statistics, per-seed canary results — inputs of viz.probe (shot 3).
 """
 
 
-def probe_plate_within_prep(reprs: dict, index, cfg) -> dict:
-    raise NotImplementedError("WI-09")
+def probe_batch(z, index, cfg) -> dict:
+    raise NotImplementedError("WI-P4")
 
 
-def probe_prep_identity(reprs: dict, index, cfg) -> dict:
-    raise NotImplementedError("WI-09")
+def inject_canary(spikes, index, seed: int, cfg):
+    raise NotImplementedError("WI-P4")
 
 
-def canary_power(index, features, cfg) -> dict:
-    raise NotImplementedError("WI-09")
+def canary_power(index, spikes, cfg) -> dict:
+    raise NotImplementedError("WI-P4")

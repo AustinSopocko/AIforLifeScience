@@ -1,0 +1,4 @@
+# Pipeline N age model (Claim B). Deliberately minimal: no representation claim on NFA.
+name: ridge_age
+alpha: 1.0                 # fixed; no tuning on outcomes
+ensemble: {members: 5, bagging_unit: prep}

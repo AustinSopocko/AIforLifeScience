@@ -1,6 +1,10 @@
-task: TBD_WI00          # D3
-alternative_task: TBD_WI00
-k_values: [2, 5, 10, 20, 50, 100, all]
-draws_per_k: 50
-head: {type: logistic_l2, C_fixed_below_k: 20, C_fixed: 1.0}
-competitors: [BL-2, BL-3, BL-4]
+corpus: potter_dense
+task: forecast_log1p_network_burst_rate
+horizon_days: {target: 7, window: [6, 8]}
+alternative_task_if_K3: forecast_log_mean_firing_rate
+labelled_unit: culture
+k_values: [1, 2, 4, 8, all]
+draws_per_k: 30
+head: {type: ridge, alpha: 1.0}
+inputs_all_methods: [div]
+competitors: [BL-A0, BL-A1, BL-A2, BL-A3]

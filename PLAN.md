@@ -1,603 +1,425 @@
-# Implementation Plan — Age-Pretext Encoder for Neural Organ-on-Chip Electrophysiology
+# Implementation Plan: Age-Pretext Encoder for Neural Organ-on-Chip Electrophysiology
 
-Status: **DRAFT for review.** Nothing in this repo is implemented. Every module is a stub that
-states its contract. Sections 15 (decisions) and 16 (assumptions) need your answers before
-work item WI-05 (preregistration seal) can run.
+**Version 2.** Revised after your answers to D1–D7 (decision log in §15). Nothing in this repo
+is implemented. Every module is a stub whose docstring states its contract.
 
-Effort scale: **S** ≤ 2 h, **M** ≈ 4 h, **L** ≈ 8 h of focused solo work.
-CP = on the critical path. DROP = can be dropped without breaking the minimum viable result.
+- Effort: **S** ≤ 2 h, **M** ≈ 3–4 h, **L** ≈ 8 h. Hour estimates are given per item because
+  the budget is now hours-tight.
+- **CP** = critical path. **CUT-n** = position in the pre-declared cut order (§9).
+- Deadline **10 Oct 2026**. Budget **≈ 35 h**: 25.5 h engineering plus 10 h video and report,
+  which is fixed.
 
 ---
 
 ## 1. Executive summary
 
-**What gets built.** We train a small, cluster-bagged ensemble regressor that predicts culture age
-(log days-in-vitro) from spontaneous MEA activity. It is trained only on solvent-control wells.
-The model's 16-d penultimate layer is the representation. On top of it we build three
-evaluations: a few-shot transfer engine (Claim A), an out-of-fold age-deviation readout for
-chronically treated wells (Claim B), and identity probes with a power-calibrated positive
-control (Claim C). The validation machinery is a deliverable in its own right, and the video
-demonstrates it running: a preregistration file, sealed protocol hashes, a hash-chained
-append-only results ledger, verdicts computed by code from pre-declared thresholds, and
-cluster bootstrap with the culture prep as the unit. Everything runs on one CPU machine. One
-entry script (`reproduce.sh`) rebuilds every headline number and figure from public downloads.
+**What gets built.** Two pipelines share one evaluation core: the age target, the
+culture-prep splits and their invariants, cluster bootstrap, permutation nulls, the
+relative-rule verdict engine, the ledger, protocol sealing and the renderers. They do **not**
+share an input path.
 
-**What gets claimed (MVR).** All three claims are tested on the US EPA Network Formation Assay
-(NFA) 2018 release. It is the only public dataset we found that has an age series and a
-perturbation series in the same cultures: rat cortex, DIV 5/7/9/12, 18 independent culture
-preps, 99 plates, about 150 compounds dosed chronically, solvent controls on every plate. The
-ToxCast subset (12 preps) is the development set and is cross-fitted by prep. The NTP subset
-(6 preps) is a sealed lockbox, opened once.
-- A: the frozen embedding plus logistic regression, trained on k = 10 labelled wells, is
-  non-inferior to the strongest from-scratch model trained on k = 50. The default downstream
-  task is early cytotoxicity prediction (decision D3).
-- B: out-of-fold age deviation separates treated wells from controls in a dose-dependent way,
-  at non-cytotoxic concentrations, with prep-level cluster-bootstrap intervals. It is
-  non-inferior to the best single raw-feature readout.
-- C: a linear probe cannot decode plate identity within a culture prep (same cells, so
-  differences there are pure acquisition artefact) beyond a permutation null. A synthetic
-  canary shows the probe could detect a plate artefact of stated size if one existed.
+- **Pipeline P (core), Wagenaar/Potter 2006.**
+  - Model: a permutation-invariant electrode-set encoder over binned spike trains, trained to
+    regress log days-in-vitro. This is the **age-pretext encoder**.
+  - Data: 30 dense rat cortical cultures in 8 dissection batches, recorded daily from DIV 3
+    to DIV 39.
+  - Hosts Claim A and Claim C.
+- **Pipeline N (core), EPA Network Formation Assay (NFA) 2018.**
+  - A separate, deliberately simple age model (prep-bagged ridge) on the 17 published
+    well-level features.
+  - Hosts Claim B, the age-residual perturbation readout, at 18-prep rigour.
+  - Framed as an **independent cross-corpus replication of the age-residual concept**. The
+    encoder never sees NFA.
+- **Kapucu 2022 hPSC.** Downloadable, but cannot meet the culture-prep standard (§2.2).
+  Therefore it is the **first stretch item**: a labelled-qualitative human transfer
+  demonstration.
 
-**Single biggest risk.** NFA publishes 17 well-level summary features, not spike trains. So the
-encoder that can reach Claim B is an MLP over hand-crafted features. Claims A and B may then
-collapse onto the hand-crafted baseline: the encoder may add nothing over "mean firing rate
-plus burst rate". The control medians make this plausible. Mean firing rate goes 0.35 → 1.85 Hz
-and burst rate goes 0.12 → 4.6 per minute from DIV 5 to DIV 12. The plan does not hide this.
-The baselines that would expose it are pre-declared as kill conditions. The stretch path (S-1,
-S-2, S-4) upgrades the representation, but only if NFA spike lists turn up (recon question R3b)
-or if you accept that Claim B stays feature-level.
+**What gets claimed.** Each claim survives only under the relative rule (D5).
+- **A (representation):** frozen age-pretext embedding plus a linear head, trained on k = 4
+  labelled cultures, forecasts a held-out-batch culture's network-burst rate 7 days ahead. Its
+  cluster-bootstrap conservative bound must beat the point estimate of the best pre-declared
+  baseline trained on all available cultures (≈ 22, about 5.5× more). Baselines: hand-crafted
+  current state (mean firing rate, burst rate, DIV), the same architecture from scratch, and a
+  frozen random-init encoder. This follows your D3 fallback (§2.2). **Your confirmation is
+  needed: D3′.**
+- **B (readout):** in NFA, out-of-fold age deviation of chronically exposed wells separates
+  them from same-plate controls. Its cluster-bootstrap lower bound on detection rate must beat
+  the best pre-declared 1-D baseline readout: the mean-firing-rate + burst-rate age residual,
+  or the best single raw feature. Development is on ToxCast (12 preps). It is confirmed once on
+  the sealed NTP lockbox (6 preps).
+- **C (credibility):** a synthetic batch artefact (canary) injected into spike trains is
+  detected at the pre-declared power. Real dissection-batch identity is **not** detected by a
+  linear probe on the encoder's embedding.
 
-**Blunt notes up front.**
-1. "Foundation encoder" is not earned in the MVR. The pretext corpus is about 540 control
-   wells × 4 timepoints from one lab. Call it an *age-pretext representation*. "Multi-source"
-   becomes defensible only with stretch item S-2 (Potter + EPA ontogeny data through a
-   validated canonical feature extractor).
-2. The MVR is rat-only. The sponsor works on human organoids. That costs points on Problem
-   Importance (30%). The only human data is Kapucu hPSC: about 4–5 plates, so it is
-   qualitative only (S-3). I recommend S-3 as the first stretch item after S-1, ahead of the
-   spike encoder.
-3. Claim A is the weakest claim under every input choice. Its from-scratch competitor gets the
-   same 17 features the encoder gets. If you must drop one claim to save time, drop A, not C.
-4. A literal "probe fails" result is weak evidence unless the probe is shown to have power.
-   About 6 control wells per plate is a small sample. Hence the canary (WI-09).
+**Single biggest risk: Claim C may fail for a biological reason, not an artefactual one.**
+Wagenaar et al. 2006's headline finding is that cultures develop *idiosyncratic, culture-specific
+bursting repertoires*. Batch identity spans different embryos and dissection days, which is
+real biology plus acquisition differences. A good activity encoder may legitimately decode it.
+The probe design reduces this (age-matched, held-out cultures within batch, so only a shared
+batch-level fingerprint can score). It cannot eliminate it. If C fails, the honest reading is
+"batch is decodable; we cannot separate biology from artefact on this corpus", not "the
+encoder memorises acquisition". The report must carry that sentence. See D13 for a cleaner
+artefact-only probe I recommend adding as a secondary.
 
----
+**Second risk: Claim B under D5.** A 1-D age projection must beat the mean-firing-rate +
+burst-rate residual by more than the bootstrap interval. Control medians suggest age in NFA is
+largely firing and burst rate (§3). A refutation is a live outcome and is pre-declared as one.
 
-## 2. What the data forces: argument for restructuring before planning
-
-The brief assumes one encoder trained on activity, with all three claims read off it. The public
-data does not support that for raw or spike-level input:
-
-| Need | Only source that has it | Form in which it is public |
-|---|---|---|
-| Wide age spread, many independent cultures | Potter/Wagenaar 2006 (30 dense + 22 sparse/small cultures, DIV 3–39) | spike times |
-| Age series **and** perturbation series | EPA NFA 2018 (18 preps, DIV 5–12, chronic DIV 0–12 dosing) | **17 well-level features only** |
-| Human cultures | Kapucu 2022 hPSC (≈4–5 plates) | raw HDF5 (2.3 TiB) + spike CSVs |
-
-So Claim B, which needs age × perturbation × ≥10 independent cultures, can be credible only
-on NFA. Unless NFA spike lists are found, the representation that supports B must live in
-NFA's feature space. A spike-trained encoder cannot be applied to NFA. Learning a map from
-features to spike embedding adds no information and would be theatre. It is rejected.
-
-**Recommended structure (decision D1):**
-- **MVR = feature path on NFA.** All three claims and all validation run on one dataset with 18
-  preps. This is the smallest result that is coherent, credible and reaches Claim B with real
-  culture-level statistics.
-- **Stretch = representation upgrades evaluated against the MVR:**
-  - S-1/S-2 bring Potter and EPA ontogeny spike data into the same 17-d space through one
-    validated extractor. That gives a multi-source pretext and a cross-lab Claim C.
-  - S-4 is a spike-train set encoder, judged head-to-head against features on Claim A/C
-    within the spike corpora.
-- If recon finds public NFA spike lists, S-4 moves into the MVR and the feature path becomes
-  its baseline. That would be the better project. Recon question R3b exists to settle this.
-
-If you reject this structure and want the spike encoder as the MVR, Claim B falls back to
-Kapucu acute pharmacology. That is one plate per species, so a culture-level cluster bootstrap
-is impossible. In my judgement that breaks the non-negotiable Claim C standard. I would not do it.
+**Terminology.** "Age-pretext encoder" is used throughout. "Foundation" appears nowhere in code,
+report or video. At 30 cultures and 8 batches it is not earned.
 
 ---
 
-## 3. Pre-recon evidence (gathered while writing this plan)
+## 2. Structure by dataset role, and what the evidence did to D3
 
-These are facts I verified, not assumptions. WI-00 re-verifies them reproducibly and fills the gaps.
+### 2.1 Roles (your D1, adopted)
 
-**EPA NFA 2018** — `https://pasteur.epa.gov/uploads/10.23719/1503191/`
-- `NTP_TC_Analysis.zip`: 159,560,650 bytes (HTTP 200), 12,376 entries (mostly Hill-plot PDFs).
-- `New TC/sourceData/AllCombined_ToxCast_20180923.csv`: 11,512 rows × 26 columns.
-  - Columns: `date, Plate.SN, DIV, well, trt, dose, units` and then `meanfiringrate,
-    burst.per.min, mean.isis, per.spikes.in.burst, mean.dur, mean.IBIs, nAE, nABE, ns.n,
-    ns.peak.m, ns.durn.m, ns.percent.of.spikes.in.ns, ns.mean.insis, ns.durn.sd,
-    ns.mean.spikes.in.ns, r, cv.time, cv.network, file.name`.
-  - Mutual information is in a separate `*_MI_*.csv` with the same keys.
-  - DIV ∈ {5, 7, 9, 12} only. 12 culture dates, 66 plates, 102 treatments, 363 control
-    (dose = 0) wells. 2,800 wells have all 4 timepoints and 104 have 3.
-- `New NTP/sourceData/ALL_NTP.csv`: 5,712 rows, same schema, DIV {5, 7, 9, 12}. 6 culture
-  dates, 33 plates, 50 treatments, 180 control wells.
-- `date` is the **culture (plating) date**. File names such as
-  `ON_20160921_MW1159-40_05_00_000.h5` keep the date fixed while DIV changes. Spike files are
-  referenced but **not included**.
-- Burst and network-spike columns are NaN in 26–39% of rows. They are undefined when no
-  bursts occur, so the missingness is informative and concentrated at early DIV.
-- **Controls sit in column 2 (A2–F2) on almost every plate.** Position is therefore confounded
-  with treatment for Claim B, and a position probe cannot be run on controls.
-- Viability: `Toxcast_AB_full_20180923.csv` (1,052 compound-dose rows × 3 replicates) and
-  `ALL_NTP_AB.csv` (494 rows), with matching LDH files. 134 + 43 compound-doses have mean
-  AB < 0.7 (45 + 16 compounds).
-- Licence: EPA ScienceHub licence (`https://pasteur.epa.gov/license/sciencehub-license.html`),
-  text to be recorded in WI-00.
+| Corpus | Role | Input path | Claims | Independent units |
+|---|---|---|---|---|
+| Wagenaar/Potter 2006 (dense) | Age-pretext encoder corpus | spike times → 200 ms bins → set encoder | A, C (+ age prerequisite) | 8 batches (prep), 30 cultures (dish) |
+| EPA NFA 2018 | Cross-corpus replication of the age-residual readout | 17 features → per-fold transforms → ridge | B | 18 preps (TC 12 dev, NTP 6 lockbox) |
+| Kapucu 2022 | Human transfer demonstration | spike CSVs → same bins → frozen encoder | stretch (qualitative) | see §2.2 |
 
-**Potter/Wagenaar 2006** — `https://potterlab.bme.gatech.edu/development-data/`
-- Dense spontaneous: **30 cultures in 8 batches**, 527 daily recordings, DIV 3–39. Coverage
-  per DIV ranges from 2 to 27 cultures and is thinnest at DIV 29–30 and 39. Sparse: 10
-  cultures. Small: 12.
-- Format: `.spk.txt.bz2` with `time_s channel` rows. One file probed was 690 KB compressed,
-  so the dense set is roughly 350 MB compressed.
-- Hardware: MCS 60-electrode 8×8 grid. *(Assumed from the paper; to be confirmed.)*
-- Terms: "acknowledge our work … by citing this article". No formal data licence. Code is
-  GPL-2. → **Do not redistribute. Download from the origin at runtime.**
+**Shared code:** `invariants`, `data/index`, `data/splits`, `eval/age`, `eval/bootstrap`,
+`eval/nulls`, `eval/verdicts`, `validation/*`, `viz/style`, `viz/animate`, `report_numbers`.
+**Not shared:** loaders, transforms, models, and the claim-specific evaluators.
 
-**Kapucu et al. 2022** (Sci Data 9:120) — G-Node DOI `10.12751/g-node.wvr3jf`
-- **CC BY 4.0.** 2.3 TiB as a ZIP. Axion 12-well (64 electrodes per well) and 48-well
-  (16 electrodes per well), 12.5 kHz.
-- hPSC: plates MEA1–5, DIV 3–77 twice weekly. Rat: MEA1–4, DIV 2–35.
-- Pharmacology is **acute only, at maturity** (hPSC DIV 29, rat DIV 22): kainate, CNQX,
-  D-AP5, GABA, gabazine, TTX.
-- Derived `*_spikes.csv` files sit per plate. Per-file download from GIN is unverified (R6).
+### 2.2 Kapucu was verified today: usable data, unusable for a culture-prep claim
 
-**EPA ontogeny / Cotterill 2016** — `github.com/sje30/EPAmeadev`
-- Per-electrode spike times in Axion 48-well HDF5 (`allH5Files/`), DIV ≤ 12, from the same
-  lab and protocol family as NFA. Terms: "free to use … cite". No formal licence.
-- File count and treatment content not enumerated (R3c).
+GIN folder listing plus one file downloaded (`hPSC_20517_MEA1_DIV28_spikes.csv`: 9,369,904 bytes,
+601,688 rows, header `Channel,Time`, channel `<well>_<electrode>`):
 
-**MEA-NAP** is a MATLAB pipeline. A MATLAB licence breaks the reproducibility criterion, so we
-cite it as a reference but do not depend on it. The canonical extractor (S-1) is Python,
-reimplementing the EPA `meadq` definitions.
-
----
-
-## 4. WI-00 — Data reconnaissance (CP, M, kill-gated)
-
-**Purpose.** Answer six questions with evidence before any modelling design is final. The
-output is `recon/RECON.md` plus machine-readable `recon/inventory.json`. Every number traces
-to a script in `recon/` that runs from a clean environment.
-
-**Discipline.** Recon may compute descriptive statistics only. The NFA prep-to-split
-assignment (dev vs lockbox, fold IDs) is fixed **before** the first descriptive statistic,
-by a committed seed applied to sorted prep IDs (see WI-04). Recon statistics are computed on
-dev preps only. The lockbox (NTP) is opened for row counts and schema checks only, never for
-feature distributions.
-
-| # | Question | Method / evidence required | Pass criterion (for the MVR) |
+| Species | Prep (culture date) | Plates | DIVs |
 |---|---|---|---|
-| R1 | Which sources carry per-recording DIV? | Per source: field name, where it lives (filename, HDF5 attribute, table column), parse rate. | NFA: `DIV` column (verified). Potter: filename token. Kapucu: `/DataInfo/DIV`. EPAmeadev: filename `DIVnn`. Parse rate ≥ 99%. |
-| R2 | Is the age and culture distribution non-trivial? | Per source: histogram of DIV × independent culture; preps; plates; wells per prep; timepoints per well. Descriptive check on dev controls: Spearman ρ(DIV, mean firing rate) and ρ(DIV, burst rate). | ≥ 10 independent preps with ≥ 3 DIV levels each. ρ ≥ 0.5 for at least one feature (age identifiable). NFA appears to pass: 18 preps × 4 DIV, rising medians. |
-| R3 | Age series **and** perturbation series? | (a) NFA: confirm dose = 0 controls on every plate, the dosing schedule (DIV 0? re-dosing at media changes?), compound-to-plate-to-prep nesting, plate layout map. (b) **Search for public NFA spike lists**: EPA ScienceHub, CCTE Clowder (`clowder.edap-cluster.com`), the supplements of Shafer 2019 and Brown 2016, USEPA GitHub. (c) Does EPAmeadev contain treated plates with metadata? | (a) Confirmed for ≥ 10 preps. (b) and (c) are informational and decide whether S-4 can be promoted (D1). |
-| R4 | A labelled downstream task distinct from age, same modality? | Candidates scored on label source, n positives, n preps with positives, independence from activity-derived labels, and a ceiling check. T1: early cytotoxicity (AB < 0.7 at DIV 12) from DIV 5/7 activity. T2: exposure detection for held-out compounds at top dose vs control. T3: NTP DNT-reference positive vs negative compound (if the designations are published). T4 (stretch): Potter plating density class. | ≥ 1 task with ≥ 30 positive compound-doses across ≥ 8 dev preps. T1 appears to pass (134 TC compound-doses with AB < 0.7). |
-| R5 | Minimum download supporting all three claims? | Byte counts and checksums per file. | MVR: `NTP_TC_Analysis.zip` (160 MB) plus the 4 small xlsx files. Stretch: Potter dense (~350 MB), EPAmeadev (TBD), Kapucu `*_spikes.csv` only (TBD, never raw HDF5). |
-| R6 | Licences and redistribution | Verbatim licence text per source, saved to `recon/licences/`. Redistribution decision per source. Can GIN serve single annexed files? | Each source tagged REDISTRIBUTE / CITE-ONLY-DOWNLOAD-AT-RUNTIME / UNUSABLE. |
+| hPSC | `20517` | MEA1 + MEA2 (6 wells each, 64 electrodes) | 19 timepoints, DIV 3–66 |
+| hPSC | `171017` | MEA4 | DIV 21, 24, 28 only |
+| hPSC | `21018` | MEA5 | DIV 70, 73, 77 only |
+| rat | `190617` | MEA1 | DIV 2–35 (10 timepoints) |
+| rat | `250417` / `31017` | MEA3 / MEA4 | 3 timepoints each, DIV 21–31 |
 
-Additional facts recon must pin down, because later items depend on them:
-- **F1.** Mapping from AB/LDH replicate columns (`AB1..AB3`) to plates. If it is unmappable,
-  T1 labels stay at the compound-dose level (acceptable, declared).
-- **F2.** Control positions per plate (column 2 verified for most plates), and which column
-  holds which concentration rank. This feeds the Claim B position-sensitivity analysis.
-- **F3.** Whether `cv.time` and `cv.network` are among EPA's 17 endpoints or extras. This fixes
-  the feature list in `configs/features/nfa17.yaml`.
-- **F4.** Whether NTP compounds carry published DNT positive/negative reference labels (task T3).
-- **F5.** Hardware per source: electrode count, layout, pitch.
+Notes:
+- `hPSC_MEA1_PCA` is a DIV 21–28 subset of the same `20517` plate, not a new prep.
+- Pharmacology plates (`*_MEA2/3_Pharmacology`) are acute, single-timepoint.
 
-**Outputs.** `recon/RECON.md` (answers R1–R6 and F1–F5 with evidence), `recon/inventory.json`,
-`recon/licences/*`, `data/manifests/*.sha256`, `recon/figures/*` (DIV × culture heatmaps).
+Consequences for D3 (few-shot hPSC age prediction) under your D4 (culture prep is the unit):
+- **The entire hPSC age series is one prep.** Splitting by prep forces the labelled pool to be
+  prep `20517` and the test set to be preps `171017` + `21018`.
+- In that test set **each prep occupies a single 7-day age window** (≈ DIV 24 vs ≈ DIV 74).
+  Age is perfectly confounded with prep identity. A model that "predicts age" there could be
+  detecting prep differences.
+- There are two test clusters, so a cluster bootstrap is impossible and the D5 rule cannot be
+  evaluated.
+- Splitting MEA1 vs MEA2 instead is a split *within* one prep, which is exactly what D4 says
+  understates variance.
 
-**Acceptance.** Every row of the R table has a pass/fail with evidence. `make recon` regenerates
-RECON.md numbers from scratch. You sign off on the kill-gate verdict before WI-05.
-
-### Kill-gate (declared now)
-
-| Gate | Finding that triggers it | Consequence |
-|---|---|---|
-| **K1 — no pretext** | No source has ≥ 10 independent preps × ≥ 3 DIV levels, **or** on dev controls no activity feature has \|ρ(DIV, feature)\| ≥ 0.5. | Project non-viable as framed. Go to **Fallback F-B**. |
-| **K2 — no Claim B** | NFA dosing is not chronic across the recorded DIVs, **or** < 10 preps have both controls and treated wells at ≥ 3 DIVs, **or** the NFA files are unavailable or unlicensable. | Claim B is impossible at culture-level rigour. Go to **Fallback F-A**. |
-| **K3 — no Claim A task** | No R4 candidate meets ≥ 30 positives across ≥ 8 preps. | Drop Claim A from the headline and report it as "not testable on public data". Proceed with B + C. No project-level kill. |
-| **K4 — legal** | NFA licence forbids derivative publication. | Same as K2. |
-
-**Fallback F-A — "Age-pretext representation with falsifiable credibility" (Claims A + C, B
-demoted).** Pretext on Potter dense/sparse/small through the canonical extractor (S-1 becomes
-CP). Claim C uses batch identity within Potter: 8 batches, with dish-within-batch probes
-mirroring plate-within-prep. Claim A uses plating density or batch-held-out tasks. B is
-reported only as a qualitative acute pharmacology case study on Kapucu, explicitly labelled
-n = 1 plate per species.
-
-**Fallback F-B — "Do MEA representations encode the lab? A batch-artefact audit of public MEA
-feature pipelines."** This is a pure Claim-C project. Run the plate-within-prep and
-batch-within-lab identity probes, with canary power calibration, on hand-crafted feature sets
-(EPA meadq-style, MEA-NAP-style metrics recomputed in Python) across NFA, Potter and Kapucu.
-The validation infrastructure is the deliverable. It reuses WI-01, 02, 04, 06, 09, 12, 14–17
-unchanged, so roughly 70% of MVR effort carries over.
+This is the situation your own D3 clause anticipates ("if Kapucu proves unusable, fall back to
+held-out-culture forecasting within Wagenaar"). I have applied it.
+- **Claim A primary is Wagenaar held-out-batch forecasting** (definition in §5.6).
+- **Kapucu hPSC is stretch S-1**, reported as a non-inferential demonstration. It has two
+  parts: a within-prep MEA1→MEA2 few-shot curve, labelled as within-prep; and early-vs-late
+  ordering on the two other preps. No claim verdict is attached.
+- **D3′ asks you to confirm.** If you would rather keep hPSC as Claim A and accept a
+  non-inferential result, say so. The cost is the same.
 
 ---
 
-## 5. Design decisions resolved
+## 3. Evidence base
+
+The NFA and Potter facts are as in v1. The checks run today add the Kapucu layout above and the
+Potter batch structure below. Everything below was observed directly, not assumed.
+
+- **NFA:**
+  - TC: 11,512 rows, 12 preps, 66 plates, 363 control wells.
+  - NTP: 5,712 rows, 6 preps, 33 plates, 180 control wells.
+  - DIV is 5/7/9/12 only. 17 endpoints plus MI.
+  - Controls sit in column 2. No spike lists. Viability (AB/LDH) per compound-dose.
+  - Control medians, DIV 5 → 12: mean firing rate 0.35 → 1.85 Hz; burst rate 0.12 → 4.6/min.
+- **Potter:**
+  - Dense: 30 cultures, 527 recordings, DIV 3–39, `.spk.txt.bz2` (`time_s channel`, about
+    690 KB per file).
+  - Cultures per batch: b1:5, b2:6, b3:6, b4:2, b5:3, b6:3, b7:2, b8:3.
+  - Sparse (10) and small (12) cultures exist only in batches 5–7, so **density is confounded
+    with batch**.
+  - → MVR uses dense only. Sparse and small are stretch.
+- **Kapucu:** §2.2. CC BY 4.0. Individual CSVs download over HTTPS from
+  `gin.g-node.org/.../raw/master/...`. hPSC `20517` is about 38 files × ~9 MB ≈ 350 MB.
+
+The A13 disclosure (pre-recon descriptive statistics) is extended to cover today's checks: Potter
+index-level counts, Kapucu folder listing, and one hPSC file's size, header and line count. No
+activity statistic was computed on Kapucu or Potter. **The disclosure is the genesis row of
+`ledger/results.jsonl`** (per D2).
+
+---
+
+## 4. WI-00: Reconnaissance (CP, S, 2 h, kill-gated)
+
+Most questions are now answered with evidence (§3). The remaining work makes the answers
+reproducible and closes the gaps that gate the encoder.
+
+| # | Question | Status | Remaining work |
+|---|---|---|---|
+| R1 | Which sources carry DIV? | NFA column; Potter filename; Kapucu filename (`_DIV28_`) | Parse-rate check on all files. |
+| R2 | Is the age spread non-trivial? | Potter: 30 cultures × up to 27 DIVs. NFA: 18 preps × 4 DIVs. | DIV × culture heatmaps. Spearman ρ(DIV, mean firing rate) on **Potter train-designated batches only**, after `split` runs. |
+| R3 | Age series × perturbation? | NFA only (chronic dosing). Kapucu acute only. | Confirm the NFA dosing schedule from Shafer 2019 methods. Search once more for NFA spike lists (informational). |
+| R4 | Downstream task distinct from age? | Wagenaar 7-day-ahead burst-rate forecasting (D3′). Kapucu hPSC fails D4 (§2.2). | Count (t, t+7±1) recording pairs per culture. |
+| R5 | Minimum download? | MVR: NFA zip (160 MB) + Potter dense (≈ 350 MB). Stretch: Kapucu hPSC CSVs (≈ 350 MB). | sha256 manifests. |
+| R6 | Licences? | NFA: EPA ScienceHub. Potter: cite-only. Kapucu: CC BY 4.0. | Save verbatim licence texts. Potter and NFA are download-at-runtime only. |
+
+**Kill-gate (evaluated at the end of WI-00, about hour 2):**
+
+| Gate | Trigger | Consequence |
+|---|---|---|
+| **K1** encoder corpus | Fewer than 8 Potter dense batches parse with DIV, or any batch has fewer than 2 cultures with ≥ 5 DIVs | Pipeline P is non-viable. Go to **Fallback F-B** (artefact audit) with NFA B intact. |
+| **K2** Claim B | NFA unavailable, unlicensable, or dosing not chronic across recorded DIVs | Drop B. A + C proceed. |
+| **K3** Claim A task | Fewer than 3 (t, t+7±1) pairs per culture for at least 20 cultures | A switches to the pre-declared alternative: 7-day-ahead **mean firing rate** forecasting (same pipeline, a target that is always defined). |
+| **G-time** | One full-size encoder fit on **synthetic** spike data takes more than 10 CPU-min | Apply the pre-declared slimming: bins 200 → 400 ms, epochs 40 → 25. Decided before Seal #1, so it is not data-dependent. |
+
+**Fallback F-B (if K1 fires): "Do MEA representations encode the lab?"** A Claim-C-only audit,
+using plate-within-prep and batch probes with canaries on hand-crafted feature sets across NFA
+and Kapucu. It reuses all of the shared core.
+
+---
+
+## 5. Design decisions
 
 ### 5.1 Input representation
+- **P: binned spike counts.** 200 ms bins, 120 s windows (600 bins), per electrode, plus a
+  population-rate channel.
+  - Raw voltage is rejected: it is unavailable for Potter and carries amplifier-noise
+    fingerprints, which works against Claim C.
+  - Event-based input is rejected: it is over-built for the scale.
+  - 200 ms resolves network bursts, typically 100 ms to 1 s, and inter-burst intervals of
+    seconds. 120 s windows hold several bursts from roughly DIV 7 onward.
+  - Fallback: 400 ms bins (G-time).
+- **N: the 17 NFA endpoints plus MI, with undefined-indicators.** This is the only form in
+  which NFA exists. The v1 transforms are kept (log1p, logit on percentages, fractions of
+  electrodes, train-fold median imputation and standardisation).
 
-| Option | Preprocessing cost | What the encoder can learn | Reaches Claim B? | Verdict |
-|---|---|---|---|---|
-| Raw voltage | Prohibitive (2.3 TiB, spike detection, artefacts). It also carries the amplifier noise floor, which *is* a plate fingerprint, so it is hostile to Claim C. | Most | No | Rejected |
-| Spike times, event-based | Moderate | High | Only with NFA spike lists | Rejected for v1 (needs a transformer over events, over-built) |
-| **Binned spike counts** per electrode (100 ms bins, 300 s windows) | Low | Burst structure, synchrony, topology proxies | Only with NFA spike lists | **Stretch S-4. Promoted if R3b finds spike lists.** |
-| **Well-level network features** (NFA 17 endpoints + missingness mask) | Zero for NFA. One validated extractor for spike corpora. | Only what the features encode | **Yes** | **MVR primary** |
+### 5.2 Geometry
+- Potter is MCS, 59 recording electrodes per culture. Kapucu is Axion: 64 electrodes per well
+  on 12-well plates, 16 per well on 48-well plates.
+- The encoder treats electrodes as an unordered set: shared per-electrode CNN, then attention
+  pooling (one seed) concatenated with mean and max pooling. Invariance to electrode
+  permutation is unit-tested.
+- Training augmentation subsamples each window to a random 16–59 electrodes, so the encoder is
+  exercised on Axion-like counts.
+- Electrode coordinates are not an input, because they would let the model fingerprint hardware.
+- Noisy electrodes listed by the source are dropped, not zero-filled.
 
-**Pick: well-level features (MVR). Fallback, or upgrade if spike lists exist: binned counts.**
-The decisive factor is reachability of Claim B at 18-prep rigour, not representational power.
+### 5.3 Architecture
+- **P encoder:**
+  - Per-electrode 1-D CNN: 3 layers, channels 16 → 32 → 32, kernel 5, dilations 1/4/16,
+    receptive field about 17 s.
+  - Then set pooling, z ∈ ℝ³², and a linear age head. About 12k parameters.
+  - Recording prediction is the mean over windows. Training samples 2 windows per recording
+    per epoch, 40 epochs, AdamW.
+  - Compute estimate: about 1 GFLOP per window-step, about 1,000 windows per epoch, about
+    10 s per epoch, so about 7 min per model on CPU.
+  - The smallest thing that can see burst structure over electrodes. Nothing larger is
+    justified at 30 cultures.
+- **N model: ridge on 25 transformed inputs.** Only an age axis is needed, no representation
+  claim. Ridge is the smallest adequate model and keeps B about the *readout*, not the model.
+- **Uncertainty:** cluster-bagged ensembles, with members trained on bootstrap resamples of
+  training **preps**.
+  - P: M = 3 (CPU budget).
+  - N: M = 5 (ridge is free).
+  - Group-level intervals always come from the prep-level cluster bootstrap (B = 4,000).
 
-Preprocessing, specified so WI-03 is executable:
-- log1p on rates and counts (`meanfiringrate, burst.per.min, ns.n, mean.dur, mean.IBIs,
-  mean.isis, ns.*durn*, ns.mean.*`).
-- logit with ε = 1e-3 on percentages (`per.spikes.in.burst, ns.percent.of.spikes.in.ns`, after
-  dividing by 100).
-- `nAE` and `nABE` divided by the electrode count, so they become fractions. This is
-  geometry-proof for S-2.
-- Every NaN-bearing feature gets a binary *undefined* indicator, and the value is imputed with
-  the train-fold median.
-- Standardise with **train-fold statistics only**. The fitted transform is part of the fold
-  artefact and covered by the protocol hash.
+### 5.4 Age target and species
+- Target is **log(DIV)** for both pipelines, via shared code (`eval/age.py`), with one
+  species-specific head per species. No shared age scale across species.
+- MVR is rat-only, in both corpora. The species clock arises only in S-1 (hPSC). There the
+  rat-trained axis is evaluated by within-plate rank correlation and isotonic recalibration,
+  never by regressing days.
+- Potter spans the plateau (beyond about DIV 25). Age error is reported per DIV bin
+  (3–9, 10–16, 17–23, 24–39), so plateau unidentifiability is visible, not averaged away.
 
-### 5.2 Heterogeneous array geometry
-- **MVR:** NFA is uniformly Axion 48-well with 16 electrodes, so there is no heterogeneity.
-  Well-level aggregates are permutation-invariant by construction.
-- **S-1/S-2 (features across MCS-60 and Axion-16):** count-dependent features become
-  fractions. Network-spike detection uses a threshold *fraction* of active electrodes, not an
-  absolute count. Per-electrode statistics are averaged over active electrodes, never summed.
-  A geometry-control experiment checks this: subsample Potter 60-electrode recordings to 16
-  random electrodes, recompute features, and report the feature-wise ICC between full and
-  subsampled arrays. Features with ICC < 0.7 are dropped from cross-source models. The cut is
-  pre-declared.
-- **S-4 (spike encoder):**
-  - Electrodes form an unordered set. A shared per-electrode temporal encoder feeds attention
-    pooling (one PMA seed) plus mean and max pooling, which is permutation-invariant by
-    construction and unit-tested.
-  - **Electrode-subsampling augmentation:** each 60-electrode training window is randomly
-    reduced to between 16 and 60 electrodes, so the encoder sees the Axion-16 regime in every
-    batch.
-  - Spatial layout is deliberately ignored in v1. The 4×4 and 8×8 grids have different
-    pitches, and coordinates would let the model fingerprint hardware, the exact thing Claim C
-    forbids. Electrode coordinates are a further ablation only.
+### 5.5 Splitting invariants and the clustering unit (D4)
+- **Unit = culture prep.** NFA prep = culture date (18). Potter prep = dissection batch (8).
+- **Plate-level** intervals (NFA plate, Potter dish) are reported alongside as sensitivity,
+  never as headline.
+- INVARIANT-1/2/3 and their enforcement are as in v1: typed `RecordingIndex`, `SplitManifest`
+  as the only split mechanism, `assert_group_disjoint` on every constructor, the leakage test
+  suite, and seal refusal.
+- One new sanctioned exception: `SplitPurpose.IDENTITY_PROBE` for Potter splits **by culture
+  within batch**. The probe is trained on some cultures of each batch and tested on held-out
+  cultures of the same batches. It is reachable only from `eval/claim_c_probe.py`.
+- **Potter cross-fitting:** 4 folds of 2 batches each. Every recording gets out-of-fold age
+  predictions and embeddings. A final encoder is trained on all 8 batches for the Claim C
+  primary probe (§5.7).
+- **Potter has no lockbox.** With 8 batches, holding any out cripples development. Protection
+  instead comes from **no hyperparameter tuning at all**. Every P hyperparameter is fixed in
+  `configs/` and covered by Seal #1. Only the pre-declared G-time slimming can change them, and
+  only before the seal. **NFA: TC dev, NTP lockbox** (D2).
 
-### 5.3 Architecture (as small as the claims allow)
-- **MVR model:** MLP with `[25 inputs (17 features + 8 undefined indicators)] → 64 → 64 →
-  z ∈ ℝ¹⁶ → linear age head`. GELU, dropout 0.1, weight decay 1e-3, MSE on log-DIV. About
-  6k parameters.
-- **Why not ridge?** Maturation curves are sigmoidal and the undefined indicators interact
-  with values. Claim A also needs a reusable embedding that is not just the input. Ridge is a
-  pre-declared baseline. If ridge matches the MLP on held-out age MAE, we report that, and
-  Claim A's feature-LR baseline will expose whether z adds anything.
-- **Why 16-d?** Smaller than the input, so the probe comparison between z and the raw input is
-  not won by dimensionality alone. Probes are also run on PCA-16 of the input, to match
-  capacity.
-- **S-4 model:** a per-electrode 1-D CNN (3 dilated conv layers, 32 channels, kernel 5,
-  dilations 1, 4, 16, about 3 s receptive field at 100 ms bins), plus a population-rate
-  channel, set pooling, z ∈ ℝ³², and an age head. About 50k parameters. Recording-level
-  prediction is the mean over windows. Nothing bigger is justified at ≈ 50 cultures.
+### 5.6 Claim A task (D3′): held-out-batch forecasting within Wagenaar
+- **Target:** log1p network-burst rate (per minute) of the same culture at DIV t′, where
+  t′ − t ∈ [6, 8] days (nearest to 7), from the recording at DIV t.
+  - Pairs are formed within culture only.
+  - Network bursts use one fixed detector (§5.8), shared with the hand-crafted baselines.
+- **Unit labelled = culture** (all its pairs). k ∈ {1, 2, 4, 8, all}. "All" is every culture
+  in the fold's 6 training batches (about 22).
+- 30 draws per k. Test = the fold's 2 held-out batches.
+- **Every method receives DIV t as an input.** Skill therefore has to come from
+  culture-specific state, not from the population trajectory.
+  - **Ours:** [z_frozen, DIV] → ridge.
+  - **BL-A1:** [log mean firing rate, log burst rate, DIV] → ridge. This is the hand-crafted
+    current state, i.e. the persistence baseline.
+  - **BL-A2:** same architecture from random init, trained end-to-end on the forecasting
+    target with k cultures (fixed 40 epochs).
+  - **BL-A3:** frozen random-init encoder + DIV → ridge.
+  - **BL-A0:** DIV only, the population trajectory.
+- Metric: MAE on the target, lower is better.
+- **Primary comparison:** ours at k = 4 vs the best baseline at k = all.
+- Why this counts as "a task the encoder never saw": the encoder is trained on age only,
+  never on future activity, and it is evaluated on held-out batches.
 
-### 5.4 Age target and the species clock
-- **Target: log(DIV).** Rat cortical activity changes fastest early (NFA medians at DIV 5 → 12
-  rise roughly 5× in firing rate and 40× in burst rate) and plateaus around DIV 21–28.
-  Regressing raw days lets the unidentifiable plateau dominate the loss. Log days compresses
-  the plateau and roughly equalises residual scale. MAE is also reported in days.
-- **Identifiable window.** Beyond the plateau, age is not identifiable from activity, and
-  residuals there are noise, not biology. In S-2, a window is estimated on training preps only
-  (the DIV range where the median of the hand-crafted features is still monotone in DIV) and
-  pre-declared. Residuals outside it are never interpreted. NFA (DIV 5–12) lies entirely
-  inside the steep phase.
-- **Rat vs human.** Never share an age scale across species. Normalising within culture type
-  needs a maturity anchor (for example, time to first network burst). That anchor is itself
-  an activity readout, which makes the target circular, so it is rejected. The MVR is
-  rat-only, so the confound is absent by design. In S-3, hPSC recordings get no regression
-  target in days. We test (i) whether the rat-trained age axis orders hPSC recordings
-  monotonically within plate (Spearman ρ, plate-level bootstrap), and (ii) whether an
-  isotonic map fitted on one hPSC plate transfers to another. A species-specific head is
-  allowed. A shared head is not.
+### 5.7 Claim C design (D5)
+- **Data:** Potter dense recordings, binned by age into the 4 DIV bins of §5.4. The probe runs
+  within each bin, so age cannot carry batch information.
+- **Representation:**
+  - Primary: embeddings from the **final encoder trained on all 8 batches.** This is the
+    in-sample case, where memorisation would show.
+  - Secondary: out-of-fold embeddings.
+  - Reported comparators: hand-crafted features, and a random-init encoder.
+- **Probe:** multinomial logistic regression (inner-CV regularisation), labels = batch, under
+  the culture-within-batch split.
+  - Statistic: excess balanced accuracy over 1,000 permutations.
+  - Permutations shuffle batch labels at **culture** level, preserving culture structure.
+- **Canary:**
+  - Per batch, a batch-specific random 10% of electrodes receive extra Poisson spikes at the
+    corpus median per-electrode rate for that DIV bin. This is a realistic "noisy electrode"
+    acquisition artefact.
+  - Injected into the **training data**. The encoder is retrained end-to-end and the probe
+    rerun.
+  - 10 seeds. Power = the fraction of seeds where the probe detects batch (p < 0.05).
+- **Pass (D5):** canary power ≥ 0.8 **and** real batch identity is not detected (permutation
+  p ≥ 0.05). If canary power < 0.8, the result is INCONCLUSIVE (underpowered), never a pass.
+- The design parameters (10% electrodes, median rate, 10 seeds, 0.8 power, α 0.05) are
+  pre-declared design choices, not claim thresholds. They are the minimum D5 leaves to me. Flag
+  them if they differ from your methodology.
 
-### 5.5 Uncertainty
-- **Epistemic, per well: cluster-bagged deep ensemble, M = 5.** Each member trains on a
-  bootstrap resample of training *preps* (not wells) with its own seed. Spread across members
-  then reflects culture-to-culture variability, which is the uncertainty that matters. The
-  cost is 5 × about 30 s on CPU per fold.
-- **Group effects (the Claim B deliverable): cluster bootstrap over preps,** B = 4,000,
-  percentile intervals. The headline is the lower bound. For each resample we recompute the
-  per-compound effect, the detection rate and the trajectory.
-- **Quantile regression is rejected for the MVR.** NFA has 4 discrete age levels, so
-  conditional quantiles are degenerate.
-- **Stretch S-6:** grouped split-conformal per-well intervals (calibration on held-out control
-  preps), giving per-well coverage guarantees under prep exchangeability. Effort S.
+### 5.8 Hand-crafted features for Potter baselines
+- Mean firing rate: spikes / (active electrodes × duration).
+- Network-burst rate: population spike count in 100 ms bins exceeding the larger of (a) 4 ×
+  the recording's median bin count and (b) spikes on ≥ 25% of active electrodes. Consecutive
+  supra-threshold bins merge into one burst.
+- The rule is fixed in `configs/features/potter_handcrafted.yaml` before Seal #1 and never
+  tuned on outcomes. These numbers define a measurement, not a claim threshold.
 
-### 5.6 Splitting invariant
-
-> **INVARIANT-1.** No culture prep contributes data to more than one of {train, val, test} within
-> any split. Wells, plates and recordings inherit their prep's assignment. Normalisation
-> statistics, imputation medians and hyperparameters are fit on train preps only.
->
-> **INVARIANT-2.** Treated wells (dose > 0) never enter pretext training.
->
-> **INVARIANT-3.** Lockbox preps are read only by an evaluation run whose protocol hash is
-> sealed and whose working tree is clean. Every opening is recorded in the ledger.
-
-**Hierarchy.** `source > prep (culture/plating date or batch) > plate/dish > well > recording
-(well × DIV)`. The split unit is always **prep**. For Potter, prep means batch (8). Dish-level
-splits there are a declared sensitivity analysis only (D4).
-
-**Enforcement in code** (`src/agepretext/invariants.py`, `data/splits.py`):
-1. The recording index is a typed table (`RecordingIndex`). `prep_id` is a non-null column
-   validated at construction.
-2. Splits are created only by `make_group_splits(index, unit="prep", …)`. It returns a frozen
-   `SplitManifest`: prep IDs per partition, fold ID, seed and a sha256 of its canonical JSON.
-   No function in the package accepts row indices to split on.
-3. Every dataset constructor, trainer and evaluator takes a `SplitManifest` and calls
-   `assert_group_disjoint(manifest, index)` before touching data. Normaliser `.fit()` takes a
-   manifest and refuses non-train rows.
-4. **Sole exception: identity probes (Claim C)**, which by definition need the same plates on
-   both sides. They are reachable only through `SplitPurpose.IDENTITY_PROBE`. That purpose
-   splits *by recording timepoint* within plate (train the probe on some DIVs, test on others,
-   so the probe must find a persistent fingerprint). It can be constructed only inside
-   `eval/claim_c_probe.py`, and the ledger records it. A test asserts that any other module
-   requesting it raises an error.
-5. Tests: (a) a well-level split raises `InvariantViolation`; (b) shared preps across
-   partitions raise; (c) fitting the normaliser on test rows raises; (d) treated rows in a
-   pretext dataset raise; (e) property test on random hierarchies: the union of partitions
-   equals all preps and their pairwise intersection is empty.
-6. CI runs these tests. `protocol seal` refuses to seal if any split manifest fails
-   `assert_group_disjoint`.
-
-**NFA split design (recommended, D2):**
-- **Dev = TC** (12 preps), with 6-fold grouped cross-fitting (2 preps per fold). Every dev well
-  gets out-of-fold predictions from a model that never saw its prep.
-- **Lockbox = NTP** (6 preps). It is evaluated once, under Seal #2, by a model trained on all
-  12 TC preps.
-- Compounds are nested within preps (6 compounds per plate, replicate plates within a prep),
-  so cross-fitting by prep also holds compounds out. Claim A's held-out-compound property
-  comes for free.
-
----
-
-## 6. Validation specification (summary; binding text in `PREREGISTRATION.md`)
-
-- **Seal #1 (WI-05)**, before any model is trained. It covers `PREREGISTRATION.md`,
-  `protocol/prereg.yaml` (machine-readable hypotheses, metrics, thresholds, baselines, nulls),
-  split manifests, the feature list and the data manifest. Its hash is committed and tagged
-  `seal-1-<hash8>`.
-- **Per-run seal.** Every evaluation run computes `protocol_hash = sha256(canonical(prereg ∥
-  configs ∥ split manifests ∥ data manifest ∥ git commit))`. It refuses to run if the tree is
-  dirty or the prereg hash differs from Seal #1. The hash is written into the ledger row.
-- **Seal #2 (WI-13).** Hyperparameters and code are frozen. Only then may the lockbox be opened.
-- **Verdicts are computed, not judged.** `eval/verdicts.py` reads the thresholds from
-  `prereg.yaml` and emits SUPPORTS, REFUTES or INCONCLUSIVE. I never type a verdict.
-- **Ledger.** `ledger/results.jsonl` is append-only and hash-chained (each row stores the sha256
-  of the previous row). It is guarded by a pre-commit hook and a CI check that the diff against
-  `origin` is pure line additions and the chain verifies. Every run is recorded, including
-  failed, refuting and exploratory runs. Schema: `ledger/SCHEMA.md`.
-
-**Pre-declared baselines (minimum set, all mandatory):**
-
-| ID | For | Baseline |
-|---|---|---|
-| BL-0 | age | Predict the train-fold mean of log-DIV. |
-| BL-1 | age, B | Ridge on log1p(mean firing rate) and log1p(burst rate). |
-| BL-2 | age, A | Ridge (age) or logistic regression (A) on all 25 preprocessed inputs. This is the "input contains everything" baseline. |
-| BL-3 | A | Same MLP architecture, random init, trained end-to-end on k wells, at every k. |
-| BL-4 | A, C | Frozen *random-init* encoder plus logistic regression. Tests whether pretext training, not the architecture, carries the effect. |
-| BL-5 | B | Raw-feature treated-vs-control readout, no encoder. Per-feature within-plate deviation AUC over DIV (mirrors EPA's AUC endpoint). The best single feature, chosen on dev, is the comparator. |
-| BL-6 | B | Multivariate raw readout. Mahalanobis distance of each treated well from its plate's control distribution (shrinkage covariance), AUC over DIV. |
-| BL-7 | B | EPA's published hit calls / AUC (external reference only, not a competitor). |
-
-**Kill conditions per claim (defaults, D5 to confirm).** Point estimates do not count. Every
-interval is a prep-level cluster bootstrap (95%, percentile).
-
-| Claim | Primary hypothesis | Kill condition (claim fails) |
-|---|---|---|
-| Age (prerequisite) | Out-of-fold R² on log-DIV for held-out preps > BL-0, and MAE ≤ BL-1 MAE. | R² lower bound ≤ 0.30, or MAE lower bound worse than BL-1 MAE + 10%. On kill: B is reported on the BL-1 age model instead, labelled as such. |
-| A | AUROC(ours, k = 10) − max(BL-2, BL-3)(k = 50) > −0.02 (non-inferiority, 5× fewer labels). | Lower bound of that difference < −0.02. Ceiling rule: if BL-2 at k = 10 has AUROC ≥ 0.95, the task is uninformative and the pre-declared alternative task is used. This is not a kill. |
-| B | (i) Calibration: held-out control mean Δ CI ∋ 0 and \|mean Δ\| < 0.10 log-days. (ii) Detection rate at 5% control-null false-positive rate, at the highest non-cytotoxic dose (AB ≥ 0.8), is non-inferior to BL-5 (margin 10 percentage points). (iii) Dose-monotonicity: median per-compound Spearman ρ(dose, Δ-AUC) < 0 among detected compounds. | (i) fails, or the lower bound of (detection_Δ − detection_BL5) < −0.10. If only (iii) fails, that is reported, and "dose-dependent" is dropped from the claim wording. |
-| C | Plate-within-prep probe on z: excess balanced accuracy (observed − permutation-null mean) not significant (one-sided permutation p > 0.05) **and** point estimate < 0.10 **and** ≤ the same statistic on the input features (no amplification). | Any of the three conditions fails. **Validity gate:** the canary must be detected at the pre-declared effect size (0.5 SD plate offset, injected into inputs) with power ≥ 0.8. If it is not, Claim C is INCONCLUSIVE (underpowered), not "passed". |
+### 5.9 Claim B design (D5)
+- Δ = ŷ − log DIV, out-of-fold (6-fold by prep on TC; final model on all TC → NTP).
+- Within-plate effect E(c, d, t) = mean Δ(treated) − mean Δ(same-plate controls).
+  Δ-AUC = area under E over DIV 5–12.
+- **Non-cytotoxic is defined relative to controls, with no absolute cut-off:** compound-dose
+  mean AB ≥ the 5th percentile of control-well AB in the same subset.
+- **Detection:** threshold at the 5% false-positive rate of a control-vs-control
+  pseudo-treatment null. Detection rate = fraction of compounds whose Δ-AUC at the highest
+  non-cytotoxic dose exceeds it.
+- **Gating comparators** are the 1-D readouts, all thresholded identically:
+  - BL-B1: age residual from a mean-firing-rate + burst-rate ridge age model. Your
+    pre-declared kill baseline.
+  - BL-B2: best single raw-feature deviation, chosen on dev.
+- **BL-B3 Mahalanobis (17-D omnibus) is reported, but I recommend it be non-gating (D14).**
+  An omnibus anomaly detector will beat any 1-D projection on detection rate by construction.
+  The claim is about an *interpretable* readout in units of days, so the fair contest is
+  against other 1-D readouts.
+- **Calibration gate:** held-out control mean Δ has a CI containing 0. This is a null check,
+  not an absolute threshold.
+- **Sensitivity analyses:** lowest-dose wells as the reference (column-2 position confound);
+  plate-clustered intervals; cytotoxic doses reported separately.
 
 ---
 
-## 7. Work items (dependency-ordered)
+## 6. Validation specification (binding text in `PREREGISTRATION.md`)
 
-Machine-readable copy: `workitems.yaml`. Graph: §8.
+**Relative rule (D5).** A claim survives only if its cluster-bootstrap bound in the favourable
+direction beats the **point estimate** of the best pre-declared baseline:
+- Lower bound for higher-is-better metrics.
+- Upper bound for error metrics.
 
-### WI-00 — Data reconnaissance · **CP · M** — see §4.
+No absolute thresholds anywhere in the claim verdicts.
 
-### WI-01 — Repo scaffold, environment, CLI, CI · **CP · S** · deps: none (parallel with WI-00)
-- **Purpose:** an installable package, a pinned environment and one CLI surface everything hangs off.
-- **Inputs:** this skeleton.
-- **Outputs:** `pyproject.toml`, `environment.yml`, `requirements.lock` (pip-tools,
-  hash-pinned), the `agepretext` CLI (`recon | fetch | index | split | seal | train | eval |
-  figures | report | demo | reproduce | ledger verify`), `.github/workflows/ci.yml`,
-  pre-commit hooks.
-- **Acceptance:** `conda env create -f environment.yml && pip install -e . && agepretext
-  --help` works in a fresh container. CI runs the test suite (skips allowed for unimplemented
-  items) on push. CPU-only torch wheel.
+| Hypothesis | Metric | Survives iff | Best-baseline set |
+|---|---|---|---|
+| H-AGE-P (prerequisite, Potter) | out-of-fold MAE log-DIV, held-out batches | UB(MAE_encoder) < min point MAE over baselines | BL-0 mean; BL-1 ridge(log mean firing rate, log burst rate) |
+| H-AGE-N (prerequisite, NFA) | same, held-out preps | UB(MAE_ridge17) < min point MAE over baselines | BL-0; BL-1 |
+| H-A | forecasting MAE, held-out batches | UB(MAE_ours@k=4) < min point MAE over {BL-A0, BL-A1, BL-A2, BL-A3}@k=all | as listed |
+| H-B | detection rate at 5% control-null false-positive rate | LB(det_Δ) > max point det over {BL-B1, BL-B2}, **and** the calibration CI contains 0 | BL-B1, BL-B2 (BL-B3 reported; D14) |
+| H-C | canary power; real-batch permutation p | power ≥ 0.8 **and** p ≥ 0.05; power < 0.8 → INCONCLUSIVE | n/a |
 
-### WI-02 — Validation infrastructure · **CP · M** · deps: WI-01
-- **Purpose:** ledger, protocol sealing and run guards, demonstrable on camera.
-- **Outputs:** `validation/ledger.py` (append, verify chain, export CSV),
-  `validation/protocol.py` (canonicalise, hash, seal, verify, tag), `validation/guards.py`
-  (`require_clean_tree`, `require_sealed_protocol`, `lockbox_access`),
-  `.pre-commit-config.yaml` with the ledger append-only hook, and the `ledger verify` CI step.
-- **Acceptance:**
-  - Editing or deleting any existing ledger line fails both the pre-commit hook and CI.
-  - A run on a dirty tree aborts before loading data.
-  - The same inputs give the same hash across two machines (canonical JSON: sorted keys,
-    fixed float repr, LF line endings).
-  - Unit tests cover chain tamper detection.
+**Kill consequences:**
+- If an H-AGE prerequisite fails, the dependent claims still run and are reported with that
+  failure attached.
+- If H-AGE-N fails, B uses the BL-1 age model, labelled as such.
 
-### WI-03 — NFA ingestion and harmonisation · **CP · S** · deps: WI-00, WI-01
-- **Purpose:** turn the EPA CSVs into a tidy, typed, checksummed table.
-- **Outputs:** `data/sources/nfa.py` → `data/processed/nfa_recordings.parquet`.
-  - One row per (prep, plate, well, DIV).
-  - Columns: the 17 endpoints (+ CV columns per F3), MI joined, undefined indicators, dose,
-    compound, CASRN, the viability join (AB/LDH at the compound-dose level), plate layout
-    (row, column), `is_control`, `subset ∈ {TC, NTP}`.
-- **Acceptance:**
-  - Row counts equal source counts (11,512 TC and 5,712 NTP).
-  - MI join is lossless.
-  - Each prep has controls at ≥ 3 DIVs.
-  - Schema validated (pandera, or explicit asserts).
-  - The "DEPRECATED" folders are never read (asserted).
+**Mechanics (unchanged from v1):**
+- Seal #1 before any training.
+- Per-run protocol hash; refusal on a dirty tree.
+- Seal #2 before the NTP lockbox.
+- Hash-chained append-only ledger with every run recorded.
+- Verdicts computed by `eval/verdicts.py` from `protocol/prereg.yaml`.
+- The A13 disclosure is ledger row 1.
 
-### WI-04 — Recording index, culture hierarchy, split manifests · **CP · M** · deps: WI-02, WI-03
-- **Purpose:** INVARIANT-1/2/3 made mechanical (§5.6).
-- **Outputs:** `invariants.py`, `data/index.py`, `data/splits.py`, `splits/nfa_dev_cv6.json`,
-  `splits/nfa_lockbox.json`, tests (a)–(e).
-- **Acceptance:** all invariant tests pass. Manifests are deterministic from the seed. The
-  lockbox manifest is created before WI-00's descriptive statistics run (recon calls
-  `split` first).
+---
 
-### WI-05 — Preregistration and Seal #1 · **CP · S** · deps: WI-00 (gate passed), WI-04
-- **Purpose:** fix every hypothesis, metric, threshold, baseline, null and kill condition
-  before results exist.
-- **Outputs:** final `PREREGISTRATION.md` and `protocol/prereg.yaml` (drafts in the repo now),
-  `protocol/seals/seal-1.json`, git tag.
-- **Acceptance:** your sign-off on D2–D6. `agepretext seal` succeeds. `prereg.yaml` validates
-  against its schema. No trained-model artefact exists in the repo or ledger at seal time
-  (asserted: the ledger has no claim rows).
+## 7. Work items (dependency-ordered, about 25.5 h engineering)
 
-### WI-06 — Statistics core · **CP · S** · deps: WI-02, WI-05
-- **Purpose:** one implementation of cluster bootstrap, permutation nulls and verdicts, used
-  by every claim.
-- **Outputs:** `eval/bootstrap.py` (prep-level resampling, percentile CIs, paired differences),
-  `eval/nulls.py` (within-prep label permutation, control-vs-control pseudo-treatment nulls),
-  `eval/verdicts.py`.
-- **Acceptance:** on synthetic data with a known effect, the CI covers the truth at ≈ 95%
-  across 500 simulations (± 3%). A verdict is reproducible from ledger inputs alone.
+The full table is in `workitems.yaml`. "Done when" is the acceptance criterion.
 
-### WI-07 — Baselines BL-0 … BL-6 · **CP · S** · deps: WI-04, WI-06
-- **Outputs:** `eval/baselines.py`, ledger rows for every baseline on dev (exploratory phase).
-- **Acceptance:** all baselines run under the cross-fit manifest. Results go to the ledger
-  regardless of outcome.
+### Shared core (7.5 h)
 
-### WI-08 — Age-pretext model · **CP · M** · deps: WI-04, WI-06
-- **Purpose:** the representation.
-- **Outputs:** `models/feature_mlp.py`, `models/ensemble.py`, `train/pretext.py`,
-  `train/crossfit.py`. Out-of-fold predictions `artifacts/oof_age.parquet` with columns
-  (recording_id, fold, member, ŷ, z[16]). Fold artefacts include the fitted normaliser.
-- **Acceptance:**
-  - Deterministic given seed (bitwise on CPU).
-  - Each fold trains on control wells of train preps only (INVARIANT-2 test).
-  - Age metrics with cluster CIs go to the ledger.
-  - Full TC cross-fit with M = 5 runs in < 15 min on CPU.
+| ID | Item | h | Deps | Outputs | Done when |
+|---|---|---|---|---|---|
+| **WI-00** | Recon + kill-gate (§4) | 2.0 | — | `recon/RECON.md`, `inventory.json`, `data/manifests/*.sha256`, licences | K1–K3 evaluated with evidence. `make recon` regenerates the numbers. |
+| **WI-01** | Scaffold, env, CLI, CI | 0.5 | — | lockfile, CLI entry, CI | Fresh-container install and `agepretext --help` work. |
+| **WI-02** | Ledger, seal, guards | 1.5 | WI-01 | `validation/*`, pre-commit hook | Tamper, deletion and dirty-tree tests pass. The genesis A13 row verifies. |
+| **WI-03** | Index, splits, invariants (both corpora) | 1.5 | WI-02 | `invariants.py`, `data/index.py`, `data/splits.py`, `splits/{potter_cv4,nfa_dev_cv6,nfa_lockbox}.json` | Invariant tests (a)–(f) pass. Manifests are deterministic. |
+| **WI-04** | Stats core: cluster bootstrap, permutation, relative-rule verdicts | 1.5 | WI-02 | `eval/{bootstrap,nulls,verdicts}.py` | 95% ± 3% coverage on 500 synthetic simulations. Verdict rules reproduce the prereg table. |
+| **WI-05** | Prereg finalisation + G-time check + Seal #1 | 0.5 | WI-00, WI-03, WI-04 | `seal-1` | No TBD placeholders. The timing run used synthetic data only. Seal created. |
 
-### WI-09 — Claim C: identity probes + canary · **CP · M** · deps: WI-08, WI-06
-- **Outputs:** `eval/claim_c_probe.py`.
-  - **C-primary:** plate identity within prep, controls only. A multinomial logistic probe
-    with nested-CV regularisation is trained on 3 DIVs and tested on the held-out DIV
-    (leave-one-DIV-out). The statistic is excess balanced accuracy pooled over preps.
-  - **C-secondary:** prep identity across preps, age-matched, reported with an amplification
-    ratio (z vs inputs vs PCA-16 vs random-init encoder).
-  - **C-canary:** inject a per-plate offset into the inputs at 0.25, 0.5 and 1.0 SD, rerun the
-    full pipeline including retraining, and report probe power at each size.
-  - Permutation null: 1,000 within-prep shuffles of plate labels.
-- **Acceptance:** the outputs needed for video shot 3 exist (confusion matrices, null
-  histogram with the observed value, canary power curve). Verdict computed.
+### Pipeline P: Wagenaar/Potter (11 h)
 
-### WI-10 — Claim B: age-deviation readout · **CP · M** · deps: WI-08, WI-07, WI-06
-- **Outputs:** `eval/claim_b_deviation.py`.
-  - Δ = ŷ − log DIV, out-of-fold, per well and DIV.
-  - Within-plate effect E(compound, dose, DIV) = mean Δ(treated) − mean Δ(same-plate controls).
-  - Δ-AUC over DIV per compound-dose.
-  - Viability stratification (AB ≥ 0.8 is "non-cytotoxic").
-  - Control-vs-control null at 5% false-positive rate.
-  - Detection rate vs BL-5/BL-6.
-  - Dose-response.
-  - Position sensitivity (reference = lowest-dose wells instead of column-2 controls).
-  - Trajectory export for shot 1.
-- **Acceptance:** calibration check (i) is reported first. Every reported number carries a
-  prep-level CI. Cytotoxic doses are reported separately, never pooled into the headline.
+| ID | Item | h | Deps | Outputs | Done when |
+|---|---|---|---|---|---|
+| **WI-P1** | Potter loader, binning, hand-crafted features | 2.0 | WI-03 | `data/sources/potter.py`, `data/windows.py`, `features/potter_handcrafted.py` | 527 recordings indexed. Bins match spike counts exactly. Burst detector unit-tested on synthetic bursts. |
+| **WI-P2** | Set encoder + age training + 4-fold cross-fit + final model | 3.0 (+≈ 1.5 h background CPU) | WI-P1, WI-05 | `models/set_encoder.py`, `train/*`, `artifacts/potter/oof.parquet`, final encoder | Permutation-invariance test passes. Deterministic. Every recording gets an out-of-fold prediction and z. |
+| **WI-P3** | H-AGE-P + BL-0/BL-1 | 0.5 | WI-P2, WI-04 | ledger rows | Per-DIV-bin errors, batch-clustered CIs, verdict. |
+| **WI-P4** | Claim C probe + canary (10 retrains, background) | 2.5 (+≈ 1.2 h background CPU) | WI-P2, WI-04 | `artifacts/potter/claim_c/` | Shot-3 inputs exist. Verdict computed. Canary power curve. |
+| **WI-P5** | Claim A forecasting engine + BL-A0–A3 at every k | 3.0 | WI-P2, WI-04 | `artifacts/potter/claim_a/`, event stream | Shot-2 generator works. Primary comparison verdict computed. |
 
-### WI-11 — Claim A: few-shot engine · **CP · M** · deps: WI-08, WI-07, WI-06
-- **Outputs:** `eval/claim_a_fewshot.py`.
-  - k ∈ {2, 5, 10, 20, 50, 100, all} labelled wells, class-balanced, drawn from train-fold
-    preps only. 50 draws per k, tested on held-out-fold preps.
-  - Ours = frozen z + logistic regression. Competitors BL-2, BL-3, BL-4 at **every** k.
-  - Implemented as an incremental generator yielding (k, method, draw, metric) so the
-    renderer can animate it live (shot 2).
-- **Acceptance:** the curve with cluster CIs is reproduced. Ceiling rule evaluated. The
-  primary non-inferiority test is computed by `verdicts.py`.
+### Pipeline N: NFA (4 h)
 
-### WI-12 — Renderers: video shots, report figures, number macros · **CP · M** · deps: WI-06 (build against synthetic fixtures early); final run after WI-09–11
-- **Outputs:**
-  - `viz/trajectory.py` (shot 1), `viz/fewshot_curve.py` (shot 2), `viz/probe.py` (shot 3).
-  - `viz/animate.py`: frame-sequence export to PNG plus MP4 via ffmpeg, 1920×1080, 30 fps,
-    with a deterministic frame count.
-  - `viz/figures.py`: a registry where every report figure is a function of ledger and
-    artefact inputs.
-  - `report_numbers.py` writes `report/generated/numbers.tex`, so every number in the report
-    prose is a macro sourced from the ledger.
-  - Specs per shot are in §10.
-- **Acceptance:** `agepretext figures` regenerates every figure byte-identically from the
-  artefacts (fixed fonts, `svg.hashsalt`). No figure is made by hand. Grep finds no literal
-  results numbers in `report/sections/*.tex`, which a CI check enforces.
+| ID | Item | h | Deps | Outputs | Done when |
+|---|---|---|---|---|---|
+| **WI-N1** | NFA ingestion + transforms | 1.0 | WI-03 | `data/sources/nfa.py`, `features/harmonise.py` | Row counts match the source. MI join lossless. DEPRECATED folders never read. |
+| **WI-N2** | Ridge age model, 6-fold prep cross-fit + H-AGE-N | 0.5 | WI-N1, WI-04, WI-05 | `artifacts/nfa/oof.parquet` | Controls-only training asserted. Verdict computed. |
+| **WI-N3** | Claim B readout, nulls, BL-B1–B3, sensitivity | 2.5 | WI-N2 | `artifacts/nfa/claim_b/` | Calibration reported first. Shot-1 trajectories exported. Plate-clustered intervals alongside. |
 
-### WI-13 — Seal #2 and confirmatory lockbox run · **CP · S** · deps: WI-09, WI-10, WI-11, WI-12
-- **Purpose:** freeze everything, then open NTP exactly once.
-- **Outputs:** `seal-2`. Ledger rows tagged `phase=confirmatory`. Lockbox access logged.
-- **Acceptance:**
-  - The lockbox opening is a single ledger event.
-  - Any later re-opening is visible as a second event with a different seal, which is
-    allowed but must be disclosed in the report.
-  - Headline numbers are generated from confirmatory rows only.
+### Outputs (3 h engineering + 10 h fixed)
 
-### WI-14 — Single entry script + clean-environment reproduction · **CP · S** · deps: WI-13
-- **Outputs:** `reproduce.sh [--profile mvr|full|smoke]` covering fetch (checksummed), index,
-  split, verify seals, train, eval (dev + lockbox), figures, numbers and report PDF.
-  `make reproduce` is equivalent. A `smoke` profile runs in < 5 min on a 2% subsample for CI.
-- **Acceptance:** in a fresh container, `bash reproduce.sh --profile mvr` reproduces every
-  headline number in the report to the printed precision, and every figure byte-identically.
-  Wall-clock < 1 h on 4 CPU cores. Run by CI on tag (smoke on push).
-  **Note:** reproduction re-runs confirmatory evaluation under Seal #2. The ledger logs these
-  as `phase=reproduction` rows, not as new lockbox openings.
+| ID | Item | h | Deps | Outputs | Done when |
+|---|---|---|---|---|---|
+| **WI-O1** | Renderers for the 3 shots, report figure registry, number macros | 2.0 | WI-04 (fixtures); final after WI-P4, WI-P5, WI-N3 | `viz/*`, `report/generated/` | Byte-identical regeneration. No literal numbers in report prose. |
+| **WI-O2** | Seal #2, NTP lockbox run, `reproduce.sh` (smoke + mvr) | 1.0 | WI-P3, WI-P4, WI-P5, WI-N3, WI-O1 | `seal-2`, confirmatory ledger rows | One lockbox opening ledgered. `reproduce.sh --profile mvr` regenerates every headline number in a fresh container. |
+| **WI-V** | Demo video ≤ 5:00 | 4.0 (fixed) | WI-O1, WI-O2 | `demo/final.mp4` | Shots 1–3 come from live pipeline output or ledger replay. `ledger verify` and seal shown. |
+| **WI-R** | Report, 15–20 pp | 5.0 (fixed) | WI-O1, WI-O2 | `report/main.pdf` | Every claim states its verdict and bound. Refutations are reported with equal prominence. |
+| **WI-W** | README + Kaggle writeup + packaging | 1.0 (fixed) | WI-V, WI-R | README, writeup | Category declared as Model & Algorithm. |
 
-### WI-15 — Demo video (≤ 5 min) · **CP · M** · deps: WI-12, WI-13, WI-14
-- **Outputs:** `demo/STORYBOARD.md` (draft exists), `scripts/demo.py` (drives a live,
-  narrated run: seal, train one fold live, ledger append, shots 1–3 rendering as the
-  computation runs), screen capture, voice-over script, final MP4 ≤ 5:00.
-- **Acceptance:** every on-screen number is produced live by the pipeline or read from the
-  ledger. Runtime ≤ 5:00. Shots 1–3 present. A terminal shows `ledger verify` passing and the
-  seal hash.
+**Engineering total:** 7.5 + 11 + 4 + 3 = **25.5 h**, plus the **10 h** fixed block = **35.5 h**.
+There is **no slack**. Background CPU (≈ 2.7 h) runs overnight and is not counted.
 
-### WI-16 — Technical report (15–20 pp) · **CP · L** · deps: WI-12, WI-13
-- **Outputs:** `report/main.tex` + `sections/`, built by `agepretext report`. Outline in
-  `report/OUTLINE.md`. All figures and numbers are generated.
-- **Acceptance:**
-  - 15–20 pages.
-  - Every claim states its prereg ID, verdict and lower bound.
-  - Refuted and inconclusive results are reported with the same prominence as supported ones.
-  - Limitations section names the single biggest risk outcome.
+### Stretch (all droppable, in priority order)
 
-### WI-17 — README, Kaggle writeup, packaging · **CP · S** · deps: WI-14, WI-15, WI-16
-- **Acceptance:**
-  - README has a one-command quickstart, data and licence table, hardware, expected runtime,
-    and how to verify the ledger and seals.
-  - The Kaggle writeup is derived from the report abstract and figures.
-  - The category is declared as Model & Algorithm.
-
-### Stretch items (all DROP)
-
-| ID | Item | Effort | Deps | Purpose and acceptance |
-|---|---|---|---|---|
-| **S-1** | Canonical spike→feature extractor (Python port of EPA `meadq` endpoints) | M–L | WI-00, WI-04 | Unlocks every non-NFA source. **Acceptance:** on EPAmeadev HDF5 files, recomputed endpoints match EPA's own published values with Spearman ≥ 0.9 per endpoint, and MAE is reported. Geometry ICC check (§5.2). |
-| **S-2** | Multi-source pretext (Potter dense/sparse/small + EPAmeadev + NFA controls) | M | S-1, WI-08 | Earns the word "multi-source". Pre-declared ablation: does multi-source pretraining change NFA Claim A/B results vs NFA-only? Cross-lab C: leave-one-source-out age transfer within the overlapping DIV 5–12 window is pass/fail. Source identity probe is reported, not pass/fail, because hardware differences are real. |
-| **S-3** | Human (hPSC) age-axis transfer, Kapucu spike CSVs | M | S-1 | Sponsor relevance. Within-plate Spearman of the rat age axis vs DIV on hPSC. Isotonic cross-plate transfer. Explicitly qualitative (≈ 4–5 plates). |
-| **S-4** | Spike-train set encoder (binned counts) | L | WI-04, S-1 data loaders | The representation-learning upgrade. Head-to-head with features on Potter-internal Claim A (density task T4) and Claim C (dish-within-batch). Promoted to MVR only if R3b finds NFA spike lists. |
-| **S-5** | Acute pharmacology before/after (Kapucu, within-recording sliding Δ) | S–M | S-3 | A literal "before/after drug" shot. n = 1 plate per species, labelled as a case study. |
-| **S-6** | Grouped split-conformal per-well intervals | S | WI-08 | Per-well coverage on held-out control preps. |
-| **S-7** | Docker image | S | WI-14 | Belt-and-braces reproducibility. |
-
-Stretch priority: **S-1 → S-3 → S-2 → S-6 → S-4 → S-5 → S-7.** S-3 ranks above S-2 and S-4
-because human relevance is worth more on the 30% Impact criterion than representational
-sophistication is on the 30% Innovation criterion, given that the innovation story is already
-carried by pretext + readout + falsifiable credibility.
+| ID | Item | h | Deps |
+|---|---|---|---|
+| **S-1** | Kapucu hPSC transfer demonstration (§2.2). Also zero-shot age on Kapucu rat prep `190617` as a cross-lab check: same lab as the hPSC data, so a lab shift without a species shift. Non-inferential. | 2.0 | WI-P2 |
+| **S-2** | NFA plate-within-prep identity probe on the 17 features (cleanest artefact-only probe in any corpus; see D13) | 1.0 | WI-N1, WI-04 |
+| **S-3** | Cytotoxicity prediction on NFA (your D3 demotion) | 2.0 | WI-N2 |
+| **S-4** | Canary at 3 magnitudes (power curve rather than a single point) | 0.5 (+ CPU) | WI-P4 |
+| **S-5** | Potter sparse/small cultures added to pretext, with density as a covariate | 1.5 | WI-P2 |
+| **S-6** | Grouped conformal per-recording intervals | 1.0 | WI-P2 |
+| **S-7** | Docker image | 1.0 | WI-O2 |
 
 ---
 
@@ -605,297 +427,201 @@ carried by pretext + readout + falsifiable credibility.
 
 ```mermaid
 graph TD
-  WI00[WI-00 Recon + kill-gate] --> WI03[WI-03 NFA ingest]
-  WI01[WI-01 Scaffold/env/CI] --> WI02[WI-02 Ledger/seal/guards]
-  WI01 --> WI03
-  WI02 --> WI04[WI-04 Index + splits + invariants]
-  WI03 --> WI04
-  WI00 --> WI05[WI-05 Prereg + Seal #1]
-  WI04 --> WI05
-  WI02 --> WI06[WI-06 Bootstrap/nulls/verdicts]
-  WI05 --> WI06
-  WI04 --> WI07[WI-07 Baselines]
-  WI06 --> WI07
-  WI04 --> WI08[WI-08 Age-pretext model]
-  WI06 --> WI08
-  WI08 --> WI09[WI-09 Claim C probes + canary]
-  WI08 --> WI10[WI-10 Claim B deviation]
-  WI07 --> WI10
-  WI08 --> WI11[WI-11 Claim A few-shot]
-  WI07 --> WI11
-  WI06 --> WI12[WI-12 Renderers/figures/numbers]
-  WI09 --> WI13[WI-13 Seal #2 + lockbox]
-  WI10 --> WI13
-  WI11 --> WI13
-  WI12 --> WI13
-  WI13 --> WI14[WI-14 reproduce.sh + clean env]
-  WI12 --> WI15[WI-15 Demo video]
-  WI13 --> WI15
-  WI14 --> WI15
-  WI12 --> WI16[WI-16 Report]
-  WI13 --> WI16
-  WI14 --> WI17[WI-17 README + writeup]
-  WI15 --> WI17
-  WI16 --> WI17
-  WI00 -.-> S1[S-1 Extractor]
-  WI04 -.-> S1
-  S1 -.-> S2[S-2 Multi-source]
-  WI08 -.-> S2
-  S1 -.-> S3[S-3 hPSC transfer]
-  S3 -.-> S5[S-5 Acute pharm]
-  WI04 -.-> S4[S-4 Spike encoder]
-  WI08 -.-> S6[S-6 Conformal]
-  WI14 -.-> S7[S-7 Docker]
+  subgraph Shared core
+    WI00[WI-00 Recon + kill-gate] --> WI05
+    WI01[WI-01 Scaffold] --> WI02[WI-02 Ledger/seal/guards]
+    WI02 --> WI03[WI-03 Index/splits/invariants]
+    WI02 --> WI04[WI-04 Bootstrap/nulls/verdicts]
+    WI03 --> WI05[WI-05 Prereg + G-time + Seal #1]
+    WI04 --> WI05
+  end
+  subgraph "Pipeline P — Wagenaar spike encoder (A, C)"
+    WI03 --> P1[WI-P1 Loader/bins/hand-crafted]
+    P1 --> P2[WI-P2 Encoder + cross-fit]
+    WI05 --> P2
+    P2 --> P3[WI-P3 H-AGE-P]
+    P2 --> P4[WI-P4 Claim C + canary]
+    P2 --> P5[WI-P5 Claim A forecasting]
+    WI04 --> P3 & P4 & P5
+  end
+  subgraph "Pipeline N — NFA features (B)"
+    WI03 --> N1[WI-N1 NFA ingest]
+    N1 --> N2[WI-N2 Ridge age + H-AGE-N]
+    WI05 --> N2
+    WI04 --> N2
+    N2 --> N3[WI-N3 Claim B readout]
+  end
+  subgraph Outputs
+    WI04 --> O1[WI-O1 Renderers/figures/macros]
+    P4 --> O1
+    P5 --> O1
+    N3 --> O1
+    P3 --> O2[WI-O2 Seal #2 + lockbox + reproduce.sh]
+    P4 --> O2
+    P5 --> O2
+    N3 --> O2
+    O1 --> O2
+    O2 --> V[WI-V Video] & R[WI-R Report]
+    O1 --> V & R
+    V --> W[WI-W README/writeup]
+    R --> W
+  end
+  P2 -.-> S1[S-1 Kapucu hPSC demo]
+  N1 -.-> S2[S-2 NFA plate probe]
+  N2 -.-> S3[S-3 Cytotox]
 ```
 
-**Critical path:** WI-00 → WI-03 → WI-04 → WI-05 → WI-06 → WI-08 → {WI-09 ∥ WI-10 ∥ WI-11} →
-WI-13 → WI-14 → WI-15 → WI-17, with WI-16 running in parallel from WI-13.
-**Parallelisable:** WI-01 and WI-02 alongside WI-00. WI-12 against synthetic fixtures from
-WI-06 onward. Report sections 1–3 (motivation, data, methods) can be drafted after WI-05.
+**Critical path:** WI-01 → WI-02 → WI-03 → WI-05 → WI-P1 → WI-P2 → WI-P5 → WI-O1 → WI-O2 →
+WI-V/WI-R → WI-W. This is 0.5 + 1.5 + 1.5 + 0.5 + 2 + 3 + 3 + 2 + 1 + 10 ≈ 25 h of serial
+work. **Pipeline N is entirely off the critical path.** It runs while encoder training and the
+canary use the CPU.
 
-**Budget.** MVR is 8 S + 9 M + 1 L ≈ **60 focused hours**. With AI-assisted implementation,
-expect 4–6 calendar days solo. The video and report are about 20% of that and are the items
-most often underestimated. **Pre-declared cut order if over budget:**
-1. All stretch items.
-2. Shot animations become static frames plus a live terminal.
-3. Reduce BL-3 draws from 50 to 20 per k.
-4. The report goes to 15 pages.
+**Schedule (today is 5 Oct):**
 
-Do **not** cut WI-09's canary, the lockbox, or the ledger. Those are the distinguishing
-contribution.
+| Day | Work | Hours | Background CPU overnight |
+|---|---|---|---|
+| Mon 5 Oct | WI-00, 01, 02, 03, 04, 05 → Seal #1 | 7.5 | — |
+| Tue 6 Oct | WI-P1, WI-P2 (start), WI-N1 | 6.0 | P2 cross-fit + final encoder |
+| Wed 7 Oct | WI-P3, WI-P4 (start), WI-N2, WI-N3 | 6.0 | canary ×10 |
+| Thu 8 Oct | WI-P4 (finish), WI-P5, WI-O1, WI-O2 → Seal #2, lockbox | 6.0 | reproduce.sh clean run |
+| Fri 9 – Sat 10 Oct | WI-V, WI-R, WI-W | 10.0 | — |
+
+**Checkpoint G-sched** (end of Wed 7 Oct): if more than 3 h behind, apply the cut order from
+the top. The decision is recorded in the ledger as an infrastructure row.
 
 ---
 
-## 9. Minimum viable result vs stretch
+## 9. Minimum viable result, the 35-hour variant, and cut order
 
-**MVR = WI-00 … WI-17 on NFA.** It yields:
-- An age model on held-out preps with CIs.
-- Claim C: plate-within-prep probe with canary-calibrated power.
-- Claim B: within-plate age-deviation trajectories with dose-response, viability
-  stratification, and comparison to raw-feature readouts.
-- Claim A: few-shot curve vs three from-scratch competitors at every k.
-- Everything confirmed once on a sealed lockbox, with ledger and seals.
+**MVR = everything in §7 except stretch.** It yields:
+- The age-pretext encoder with H-AGE-P.
+- Claim C (batch probe + canary).
+- Claim A (forecasting curve against four baselines at every k).
+- Claim B on NFA, confirmed once on the sealed lockbox.
+- Ledger, seals, the three video shots, the report and `reproduce.sh`.
 
-This is defensible even if A and B **refute**. A refuted, pre-registered B with a passing C is
-still a credible submission. A "supported" B without C is not.
+It stays defensible if A or B refutes. It is not defensible without C's canary.
 
-**Stretch = S-1 … S-7** (§7 table). Each is evaluated against the MVR, never instead of it.
+**Pre-declared cut order.** Apply strictly from the top. Each cut is recorded in the ledger.
+
+| # | Cut | Saves | Cost to the submission |
+|---|---|---|---|
+| CUT-1 | All stretch items | — | Human transfer appears only as a limitation |
+| CUT-2 | Animated shots → static frames + live terminal | 1.0 h | Weaker presentation (10%) |
+| CUT-3 | Claim A k-grid {1, 2, 4, 8, all} → {2, 4, all}; draws 30 → 15 | 0.5 h | Coarser curve. Primary comparison intact. |
+| CUT-4 | Potter ensemble M = 3 → 1 | CPU only | Lose per-recording epistemic spread. Cluster CIs unaffected. |
+| CUT-5 | Claim B: drop BL-B3 Mahalanobis and dose-response. Keep calibration, BL-B1/B2, lowest-dose sensitivity and plate-clustered intervals. | 0.75 h | Less context for B |
+| CUT-6 | NFA lockbox replaced by a 6-fold cross-fit over all 18 preps | 0.5 h | Loses confirmatory protection. Contradicts D2, so it needs your sign-off if reached. |
+| CUT-7 | Drop Claim B entirely | ≈ 4 h | Pipeline N is independent. A + C survive untouched. |
+| never | Canary, ledger and seals, cluster bootstrap, Claim C | — | These are the contribution |
+
+I put B (CUT-7) ahead of A because B is structurally separable in your restructure. Dropping it
+leaves the encoder story whole. Dropping A would leave an encoder with no representation
+evidence. Override if you rank them differently.
 
 ---
 
 ## 10. Demo video: shots drive code requirements
 
-Storyboard: `demo/STORYBOARD.md`. Each shot below lists what the code must render.
+See `demo/STORYBOARD.md` (updated).
+1. **Age-deviation trajectory (NFA, Claim B)** via `viz/trajectory.py`.
+   - Control band; dose lines revealed by DIV; BL-B1 inset; cytotoxic doses hatched.
+   - The compound is chosen by a pre-declared rule (largest non-cytotoxic Δ-AUC lower bound on
+     NTP).
+   - Caption states that dosing starts at DIV 0, with no pre-exposure recording.
+2. **Few-shot forecasting curve filling in (Potter, Claim A)** via `viz/fewshot_curve.py`, fed
+   live by the `eval/claim_a_fewshot.py` generator.
+   - A guide line marks the best baseline at k = all.
+   - A verdict badge comes from `verdicts.py`.
+3. **Probe fails, canary succeeds (Potter, Claim C)** via `viz/probe.py`.
+   - Real-batch confusion matrix (should look uniform).
+   - Canary-retrained confusion matrix (diagonal).
+   - Permutation null with the observed value marked; canary power.
 
-**Shot 1: age-deviation trajectory diverging under exposure** (`viz/trajectory.py`, WI-10 artefacts)
-- X axis: DIV (5, 7, 9, 12). Y axis: Δ in days (log-days transformed back to "days
-  younger/older at this DIV").
-- A control band shows the median and the 95% prep-bootstrap interval of out-of-fold control Δ.
-- One line per concentration of a chosen compound, sequential colour map by dose, with
-  ensemble ± bootstrap ribbons.
-- Animated reveal: DIV by DIV, then dose by dose.
-- Requirements:
-  - `render_trajectory(effects, compound, *, reveal_steps) -> list[Frame]`.
-  - Compound selection is pre-declared in the storyboard by rule ("the NTP compound with the
-    largest non-cytotoxic Δ-AUC lower bound"), never hand-picked after seeing plots.
-  - Cytotoxic doses are drawn hatched.
-  - An inset shows the BL-5 (raw firing rate) trajectory for the same compound.
-- Honesty: NFA has no pre-exposure recording, because dosing starts at DIV 0. "Diverging"
-  means divergence from controls growing over DIV 5 → 12. The narration says so.
-
-**Shot 2: few-shot curve filling in live** (`viz/fewshot_curve.py`, consumes the WI-11 generator)
-- X axis: labelled wells (log scale, k = 2 … all). Y axis: AUROC. Lines for ours, BL-2, BL-3
-  and BL-4, with CI ribbons.
-- Points appear as the generator yields them. The run is fast enough to film live for the
-  dev fold, or replays recorded generator output at the same timing with an on-screen
-  "replay" label.
-- Requirements:
-  - `LiveCurve.update(event)`.
-  - `export_frames()`.
-  - A horizontal guide marks "BL-best at k = 50", so the non-inferiority comparison is visible.
-
-**Shot 3: batch-identity probe failing, next to a probe that succeeds** (`viz/probe.py`, WI-09 artefacts)
-- Left: confusion matrix for plate identity within one prep, on z, which should look uniform.
-- Middle: the same probe on canary-injected inputs, showing a clear diagonal. This proves the
-  probe can see.
-- Right: the permutation-null histogram with the observed excess accuracy marked, and the
-  canary power curve.
-- Requirements: `render_probe_panel(probe_results, canary_results) -> Frame` and a terminal
-  overlay of `ledger verify` and the seal hash.
-
-**Cross-cutting:** a 1920×1080 frame size, a fixed font bundled in repo (DejaVu Sans), a
-colour-blind-safe palette, and every frame stamped with the protocol hash (first 8 chars) and
-the ledger row ID it visualises.
+Every frame is stamped with the protocol hash and the ledger `row_id`.
 
 ---
 
-## 11. Technical report: figures come from the pipeline
+## 11. Report
 
-Outline and page budget: `report/OUTLINE.md`.
-- LaTeX, built by `agepretext report` via latexmk.
-- `report/generated/` holds `numbers.tex` and the figures. It is gitignored and rebuilt by
-  `reproduce.sh`. A built PDF is attached to the release.
-- Figure registry (`viz/figures.py`): F1 data and hierarchy overview, F2 age model
-  calibration, F3 Claim C panel, F4 Claim B trajectories, F5 Claim B detection vs baselines,
-  F6 Claim A curve, F7 validation workflow diagram (static, versioned), F8 ledger timeline.
+Outline in `report/OUTLINE.md`, updated for the two-pipeline structure. All figures come from
+`viz/figures.py`, and all numbers from ledger-backed macros. 15–20 pages. Claim C comes first
+among results.
 
----
+## 12. Reproducibility
+- `reproduce.sh --profile mvr`: fetch with checksums, index, verify splits and seals, train
+  (P cross-fit + final; N cross-fit + final), evaluate (dev + lockbox as `phase=reproduction`),
+  figures, report.
+- Expected wall-clock about 2 h on 4 cores, dominated by encoder training and the canary.
+- `--profile smoke` runs in under 5 min for CI.
+- Data is never committed. Potter and NFA are downloaded from origin at runtime.
 
-## 12. Reproducibility design (from day one)
+## 13. Sponsor digital-twin precondition
+Unchanged in substance from v1:
+- A calibrated age coordinate (the shared state axis).
+- A credibility test any pooled neural-data asset must pass before twin training: the batch
+  probe plus canary, reusable on the sponsor's data as-is.
+- A perturbation readout in interpretable units.
 
-- **Data:**
-  - Never committed.
-  - `agepretext fetch` downloads from the origin and verifies sha256 against
-    `data/manifests/*.sha256`, which is created in WI-00.
-  - CITE-ONLY sources are never mirrored (D10).
-- **Environment:**
-  - `environment.yml` (conda, Python 3.11, ffmpeg, latexmk) plus hash-pinned
-    `requirements.lock`.
-  - CPU-only torch.
-  - `torch.use_deterministic_algorithms(True)`, fixed seeds, single-threaded BLAS for
-    bitwise-reproducible training.
-- **One entry point:** `reproduce.sh`. Profiles in `configs/profiles/`.
-- **Hardware assumption:** 4 cores, 16 GB RAM, 5 GB disk (MVR), 20 GB (full stretch). No GPU
-  needed. If S-4 is pursued at scale, a GPU would cut wall-clock but is not required (§16, A6).
-
----
-
-## 13. Where this is a precondition for the sponsor's digital-twin roadmap
-
-A digital twin built on pooled neural data needs three things this project builds first:
-1. **A shared state coordinate across sites and platforms.** Functional age is a unit-bearing,
-   calibrated coordinate ("this chip behaves like DIV 9") that a twin can be conditioned on,
-   compared against and initialised from. Without one, pooled recordings have no common axis.
-2. **Proof that pooling does not encode the site (Claim C).** If representations carry plate or
-   lab identity, a twin trained on pooled assets models the acquisition rig, not the biology.
-   The plate-within-prep probe plus canary is the acceptance test any pooled neural data asset
-   should pass before twin training. **This is the precondition** in the strict sense. The
-   probe, canary and ledger tooling are reusable on the sponsor's own data unchanged.
-3. **A perturbation readout in interpretable units (Claim B).** Twins must be validated
-   against interventions. "Exposure makes the culture read 2.3 days younger, CI […]" is a
-   validation target a twin can be scored on.
-
-The report says this explicitly, and says what is missing: human data at scale (S-3 shows
-only the method), 3D organoid geometry, and closed-loop stimulation data.
-
----
+The two-corpus structure strengthens the second point. The same age-residual readout is shown on
+two independent corpora with different input modalities.
 
 ## 14. Repo skeleton
+As in v1, with updated stubs and configs:
+- `data/sources/potter.py` is core.
+- New: `features/potter_handcrafted.py`, `models/ridge_age.py`,
+  `configs/features/potter_handcrafted.yaml`, `configs/model/ridge_age.yaml`.
+- Claim A and Claim C evaluators retargeted to Potter.
 
-```
-PLAN.md                    this document
-PREREGISTRATION.md         DRAFT; frozen at Seal #1 (WI-05)
-README.md                  quickstart (stubbed)
-workitems.yaml             machine-readable work-item DAG
-reproduce.sh               single entry point (stub)
-Makefile                   thin aliases over the CLI
-pyproject.toml, environment.yml
-.pre-commit-config.yaml    ledger append-only hook
-.github/workflows/ci.yml   tests + ledger verify + invariant tests
-configs/
-  data/{nfa,potter,epameadev,kapucu}.yaml
-  features/nfa17.yaml
-  model/{feature_mlp,set_encoder}.yaml
-  train/pretext.yaml
-  eval/{baselines,claim_a,claim_b,claim_c}.yaml
-  profiles/{smoke,mvr,full}.yaml
-protocol/
-  prereg.yaml              machine-readable hypotheses/thresholds (DRAFT)
-  seals/                   seal records (generated)
-ledger/
-  SCHEMA.md                row format + hash chain spec
-  results.jsonl            append-only, empty until first run
-splits/                    SplitManifest JSONs (generated in WI-04, committed)
-data/manifests/            sha256 manifests (WI-00)
-recon/RECON.md             WI-00 report template with questions R1–R6, F1–F5
-demo/STORYBOARD.md         shot list, timings, narration skeleton
-report/OUTLINE.md          section/page budget, figure registry
-src/agepretext/
-  cli.py config.py invariants.py
-  data/{download,index,splits,windows}.py  data/sources/{nfa,potter,epameadev,kapucu}.py
-  features/{canonical,bursts,network_spikes,harmonise}.py
-  models/{feature_mlp,set_encoder,heads,ensemble}.py
-  train/{pretext,crossfit}.py
-  eval/{age,baselines,bootstrap,nulls,verdicts,claim_a_fewshot,claim_b_deviation,claim_c_probe}.py
-  validation/{ledger,protocol,prereg,guards}.py
-  viz/{style,trajectory,fewshot_curve,probe,animate,figures}.py
-  report_numbers.py
-scripts/demo.py
-tests/                     invariant, ledger, protocol, split-leakage tests (stubs)
-```
-
-The ledger format is in `ledger/SCHEMA.md`. Config layout: one YAML per concern. A profile
-composes them. The resolved config is canonicalised and hashed into the protocol hash.
+The ledger format is in `ledger/SCHEMA.md`, and the genesis A13 row is present.
 
 ---
 
-## 15. Decisions you must make
+## 15. Decision log and open decisions
 
-| ID | Decision | My recommendation | Why I can't decide it |
-|---|---|---|---|
-| **D1** | Accept the restructure: MVR = NFA feature path, spike encoder as stretch (promoted only if NFA spike lists exist)? | Yes | It changes what "the encoder" means in your title and pitch. |
-| **D2** | Lockbox design: TC = dev (cross-fit), NTP = sealed confirmatory set, opened once? Alternative: cross-fit all 18 preps with no lockbox (more power, weaker protection). | TC dev / NTP lockbox | Trade-off between power (6 lockbox preps make wide CIs) and protection. It's your methodology. |
-| **D3** | Claim A downstream task: T1 early cytotoxicity (DIV 5/7 → AB < 0.7), T2 held-out-compound exposure detection, T3 DNT reference class (if F4 finds labels). Plus which one is the pre-declared alternative under the ceiling rule. | T1 primary, T2 alternative | T1 labels are compound-dose level (3 replicate plates). You may judge cytotoxicity too close to "activity collapse" to count as distinct. |
-| **D4** | Cluster unit: NFA prep (culture date, 18 preps) vs plate (99). Potter batch (8) vs dish (52). | Prep and batch for splits and primary CIs. Plate and dish as declared sensitivity analyses. | "Culture" is ambiguous in your brief. Prep is stricter but gives few clusters, so the lockbox CIs will be wide. |
-| **D5** | Numeric thresholds: age R² floor 0.30; A non-inferiority margin 0.02 AUROC at k = 10 vs 50; B margin 10 percentage points, calibration 0.10 log-days, non-cytotoxic AB ≥ 0.8; C excess-accuracy cap 0.10, permutation α 0.05, canary 0.5 SD at power 0.8. | As listed | These encode your risk tolerance and must match your existing methodology. |
-| **D6** | Your existing validation infrastructure: do you have a ledger schema, hash recipe (what goes into the protocol hash) or seal format I must match, or code to vendor in? | Unknown | You said the plan should mirror a methodology you already use. I designed a compatible one from scratch, but I haven't seen yours. |
-| **D7** | Hard calendar budget (days) and submission deadline. | n/a | Sets where the cut order bites. |
-| **D8** | Hardware: CPU-only confirmed? Any GPU? RAM and disk? | CPU-only is sufficient for the MVR | Affects only S-4. |
-| **D9** | Report language and template (English LaTeX? competition-mandated template?), and whether the Kaggle writeup has a word limit. | English LaTeX | Competition-specific. |
-| **D10** | Redistribution: Potter and EPAmeadev have no formal licence ("cite"). Download at runtime only (fragile if the sites go down), or ask the authors for permission to mirror derived feature tables on Zenodo? | Runtime download now, author email in parallel | A legal and relationship call. |
-| **D11** | Title: drop "foundation" (MVR is single-lab, ≈ 540 control wells)? | Yes, use "age-pretext encoder" | Your positioning. |
-| **D12** | Stretch priority: S-3 (human relevance) before S-4 (spike encoder)? | Yes | Positioning versus the sponsor. |
+| ID | Status | Resolution |
+|---|---|---|
+| D1 | **Adopted** | Structure by dataset role (§2.1) |
+| D2 | **Adopted** | TC dev / NTP lockbox. A13 logged as ledger row 1. **D2b (confirm):** Potter has no lockbox; protection comes from zero hyperparameter tuning (§5.5). |
+| D3 | **Conflict → resolved by your fallback clause, needs confirmation (D3′)** | hPSC can't meet D4 (§2.2). Claim A = Wagenaar held-out-batch forecasting (§5.6). Kapucu = S-1. Cytotoxicity = S-3. |
+| D4 | **Adopted** | Prep is the unit. Plate/dish intervals as sensitivity only. |
+| D5 | **Adopted** | Relative rule (§6). One application question remains, D14. |
+| D7 | **Adopted** | 35.5 h plan, cut order in §9. **Open:** deadline time zone and hour? |
+| D8 | **Open** (left blank) | Provisional: one CPU machine, ≥ 4 cores, 16 GB RAM, 10 GB disk. **I need the real core count.** The canary and cross-fit schedule assume about 2.7 h background CPU overnight. |
+| D9 | **Open** (left blank) | Provisional: English, LaTeX, our own template. Is there a mandated template or page format, and a Kaggle word limit? |
+| D10 | **Open** (left blank) | Provisional: download from origin at runtime, nothing mirrored. Potter and EPAmeadev have no formal licence. |
+| D11 | **Adopted** | "Age-pretext encoder" throughout. |
+| D12 | **Open** (left blank) | Provisional stretch priority: S-1 → S-2 → S-3 → S-4 → S-5 → S-6 → S-7. |
+| **D13** | **New** | Claim C on dissection batch confounds biology with artefact (§1 risk). Keep batch as the gating probe (your D5) and add S-2, the NFA plate-within-prep probe, as a secondary artefact-only check? I recommend yes. It is 1 h and is the only probe in any corpus where the cells are literally identical. |
+| **D14** | **New** | Should Claim B's gating baseline set include Mahalanobis (17-D omnibus)? I recommend no. Report it, but gate on 1-D readouts (§5.9), because an omnibus detector beats any 1-D projection on detection by construction. If you want it gating, B will almost certainly refute. |
+| **D15** | **New** | Claim A primary comparison at k = 4 vs k = all (≈ 22 cultures, 5.5×). Your original spec said about 10 labelled units vs "many times more". With 30 cultures, k = 10 vs all would be only about 2×. Confirm k = 4. |
 
----
+## 16. Assumptions (flag for review)
 
-## 16. Assumptions I made (flag for review)
-
-- **A1.** NFA `date` is the plating/culture date and identifies an independent cell prep.
-  Inferred from file names that keep the date fixed while DIV changes. WI-00 confirms.
-- **A2.** `dose == 0` rows are solvent (DMSO) controls with the same vehicle concentration as
-  treated wells.
-- **A3.** NFA dosing is chronic from about DIV 0 through DIV 12, re-dosed at media changes,
-  with no pre-exposure recording. This is from Shafer et al. 2019 / Brown et al. 2016 as I
-  recall them, not yet verified against the paper text (WI-00, R3a).
-- **A4.** The AB/LDH viability replicates (`AB1..3`) correspond to the 3 replicate plates per
-  compound. If not mappable to wells, labels stay at compound-dose level.
-- **A5.** NFA, Potter and EPAmeadev are all E18 rat cortex and biologically comparable.
-  Culture density, media and substrate differ, and S-2 must treat source as a covariate.
-- **A6.** One machine (4+ cores, 16 GB RAM, ≥ 20 GB free disk) with no GPU is enough for the
-  MVR and all stretch items except possibly S-4 at full scale. Nothing in the plan needs a
-  cluster.
-- **A7.** The competition permits public third-party data with citation, and judges will run
-  or inspect `reproduce.sh` but not require bundled data.
-- **A8.** "Days, not weeks" means about 5 calendar days for the MVR. The 60-hour estimate
-  assumes AI-assisted coding.
-- **A9.** Python 3.11, PyTorch (CPU), scikit-learn, pandas, matplotlib, ffmpeg and latexmk
-  are acceptable dependencies.
-- **A10.** Controls in column 2 are a systematic layout choice across plates (seen for most
-  plates). The position confound in Claim B is handled by a sensitivity analysis, not
-  eliminated.
-- **A11.** The 2018 NFA release is the only NFA data used. Later NFA screening in ToxCast
-  invitrodb is concentration-response summaries only, with no per-well DIV data.
-- **A12.** Kapucu `*_spikes.csv` files can be downloaded individually from GIN without pulling
-  the 2.3 TiB archive. If not, S-3 and S-5 are dropped.
-- **A13.** Pre-recon descriptive checks on TC dev controls (the DIV medians quoted in §1) do
-  not compromise preregistration, because they are disclosed here and WI-04 fixes the lockbox
-  before WI-00 formally reruns them.
-
----
+- **A1.** NFA `date` = plating date = independent prep. Inferred from file names.
+- **A2.** NFA `dose == 0` = vehicle controls.
+- **A3.** NFA dosing is chronic from about DIV 0. To be verified in WI-00 R3.
+- **A5.** Potter batch = one dissection (independent prep). The culture-within-batch structure
+  follows the `batch-culture-DIV` file naming.
+- **A6.** CPU-only is sufficient: about 7 min per encoder fit (estimated, verified by G-time on
+  synthetic data).
+- **A7.** Kapucu date tokens (`20517`, `171017`, `21018`, …) are d.m.yy culture dates, so they
+  are distinct preps. This was inferred from naming consistency with the paper's plate list;
+  WI-00 checks it against `expLog.csv`.
+- **A8.** Wagenaar recordings are about 30 min each, so roughly 15 windows of 120 s per
+  recording. To be checked in WI-P1.
+- **A9.** 7 ± 1-day recording pairs exist for most cultures, given near-daily recording. To be
+  checked in K3.
+- **A10.** The judges accept runtime downloads of cite-only data.
+- **A13.** The pre-recon disclosure (counts, layout, medians; Potter index counts; one Kapucu
+  file's size, header and line count; no model fit) does not compromise the seal. It is logged
+  as ledger row 1.
 
 ## 17. Sources
-
-- Kapucu F.E. et al. (2022) *Comparative microelectrode array data of the functional development
-  of hPSC-derived and rat neuronal networks.* Sci Data 9:120.
-  https://www.nature.com/articles/s41597-022-01242-4 · PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC8969177/
-  · Data: https://doi.gin.g-node.org/10.12751/g-node.wvr3jf/
-- Shafer T.J. et al. (2019) *Evaluation of Chemical Effects on Network Formation in Cortical Neurons
-  Grown on Microelectrode Arrays.* Toxicol Sci 169(2):436. https://academic.oup.com/toxsci/article/169/2/436/5366708
-  · Data: https://catalog.data.gov/dataset/data-for-evaluation-of-chemical-effects-on-network-formation-in-cortical-neurons-grown-on-
-- Wagenaar D.A., Pine J., Potter S.M. (2006) *An extremely rich repertoire of bursting patterns during the
-  development of cortical cultures.* BMC Neurosci 7:11. https://bmcneurosci.biomedcentral.com/articles/10.1186/1471-2202-7-11
-  · Data: https://potterlab.bme.gatech.edu/development-data/html/daily.spont.dense.text.html
-- Cotterill E. et al. (2016) *Characterization of Early Cortical Neural Network Development in Multiwell
-  Microelectrode Array Plates.* J Biomol Screen 21:510. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4904353/
-  · Data/code: https://github.com/sje30/EPAmeadev
-- EPA ScienceHub licence: https://pasteur.epa.gov/license/sciencehub-license.html
+- Kapucu et al. 2022, Sci Data 9:120. https://doi.gin.g-node.org/10.12751/g-node.wvr3jf/ · repo
+  https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset
+- Shafer et al. 2019, Toxicol Sci 169:436. Data:
+  https://catalog.data.gov/dataset/data-for-evaluation-of-chemical-effects-on-network-formation-in-cortical-neurons-grown-on-
+- Wagenaar, Pine & Potter 2006, BMC Neurosci 7:11. Data:
+  https://potterlab.bme.gatech.edu/development-data/html/daily.spont.dense.text.html
+- Cotterill et al. 2016, J Biomol Screen 21:510. https://github.com/sje30/EPAmeadev

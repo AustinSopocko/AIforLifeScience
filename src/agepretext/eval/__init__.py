@@ -1,1 +1,1 @@
-"""Evaluation: baselines, claims A/B/C, cluster bootstrap, nulls, and the verdict engine."""
+"""Evaluation (shared core + claim-specific evaluators). Verdicts follow the relative rule in protocol/prereg.yaml."""

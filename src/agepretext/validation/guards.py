@@ -6,7 +6,7 @@ Contract
   gitignored paths excluded).
 - `require_sealed_protocol(profile, *, min_seal=1)` raises unless current_hash(profile) matches a
   seal >= min_seal; returns the SealRecord for the ledger row.
-- `lockbox_access(profile)` context manager: requires seal >= 2 for phase=confirmatory, writes a
+- `lockbox_access(profile)` context manager: guards the NFA NTP lockbox: requires seal >= 2 for phase=confirmatory, writes a
   ledger row with lockbox_opened=true BEFORE yielding lockbox data, and marks a second opening
   under a different seal as `notes: "LOCKBOX RE-OPENED"` (allowed, must be disclosed in report).
   phase=reproduction re-runs under the same seal are logged as reproduction, not openings.

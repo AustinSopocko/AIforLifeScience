@@ -1,136 +1,158 @@
-# Preregistration — Age-Pretext Encoder (DRAFT, NOT SEALED)
+# Preregistration: Age-Pretext Encoder (DRAFT v2, NOT SEALED)
 
-> **Status: DRAFT.** This file becomes binding at **Seal #1** (work item WI-05), after the
-> WI-00 kill-gate passes and decisions D2–D6 in `PLAN.md` §15 are answered. After sealing,
-> changes are allowed only as dated **amendments** appended at the bottom. Each amendment
-> needs a new seal, and the ledger records every amendment. Values in ⟨angle brackets⟩ are
-> placeholders that WI-00 must fill. The machine-readable twin is `protocol/prereg.yaml`.
-> Evaluators read thresholds from that file only, never from prose. If prose and YAML
-> disagree, the YAML wins and the disagreement is a bug.
+> **Status: DRAFT.** Binding at **Seal #1** (WI-05).
+> - After sealing, changes are dated **amendments** at the bottom. Each amendment needs a new
+>   seal and a ledger row.
+> - The machine-readable twin is `protocol/prereg.yaml`. Verdicts are computed only from it.
+>   If prose and YAML disagree, the YAML wins and the disagreement is a bug.
+> - Open items are marked ⟨…⟩ and map to `PLAN.md` §15 (D2b, D3′, D13–D15).
 
-## 0. Scope
+## 0. Scope and units
 
-- **Primary dataset:** US EPA Network Formation Assay 2018 release (rat cortex, Axion 48-well,
-  DIV 5/7/9/12).
-  - Development set: ToxCast subset (TC), 12 preps, 6-fold grouped cross-fitting by prep.
-  - Confirmatory lockbox: NTP subset, 6 preps. Opened once, under Seal #2.
-- **Unit of analysis:** recording = well × DIV.
-- **Unit of independence:** culture prep (`date` column). All intervals are percentile cluster
-  bootstraps over preps (B = 4,000, 95%). The **lower bound** is the headline.
-- **Age target:** log(DIV). Δ = predicted − actual (log-days). Reported in days via
-  DIV·(exp(Δ) − 1).
+| | Pipeline P (Claims A, C) | Pipeline N (Claim B) |
+|---|---|---|
+| Corpus | Wagenaar/Potter 2006, dense cultures | EPA NFA 2018 |
+| Input | binned spike trains (200 ms, 120 s windows) | 17 well-level endpoints + MI |
+| Age model | electrode-set age-pretext encoder, cluster-bagged M = 3 | ridge on 25 transformed inputs, cluster-bagged M = 5 |
+| Prep (cluster unit) | dissection batch (8) | culture date (18) |
+| Sensitivity unit | culture/dish (30) | plate (99) |
+| Development | 4-fold cross-fit, 2 batches per fold; no tuning (D2b) | TC: 6-fold cross-fit, 2 preps per fold |
+| Confirmation | n/a (all hyperparameters fixed at Seal #1) | NTP lockbox (6 preps), opened once at Seal #2 |
 
-## 1. Invariants (enforced in code, see `src/agepretext/invariants.py`)
+- **Age target:** log(DIV), species-specific heads. Both corpora are rat in the MVR.
+- **Intervals:** prep-level percentile cluster bootstrap, B = 4,000, 95%. The favourable-direction
+  bound is the headline. Plate- or dish-clustered intervals are reported alongside as
+  sensitivity, never as headline.
 
-- **INVARIANT-1.** Splits are by prep. No prep appears in two partitions. Transforms and
-  hyperparameters are fit on train preps only.
-- **INVARIANT-2.** Treated wells (dose > 0) never enter pretext (age) training.
-- **INVARIANT-3.** The lockbox is read only under a sealed protocol on a clean tree. Every
-  opening is ledgered.
-- **Sole exception:** Claim C identity probes split by DIV within plate
-  (`SplitPurpose.IDENTITY_PROBE`), because identity probes need shared identities.
+## 1. Invariants (enforced in code)
 
-## 2. Hypotheses, metrics, nulls, kill conditions
+1. **INVARIANT-1.** Splits are by prep. Transforms, imputers and model parameters are fit on
+   train preps only. P has no tuned hyperparameters.
+2. **INVARIANT-2.** NFA treated wells never enter age training.
+3. **INVARIANT-3.** The NTP lockbox is read only under Seal #2 on a clean tree. Every opening is
+   ledgered.
+4. **Sanctioned exception.** The Claim C probe splits **by culture within batch**
+   (`SplitPurpose.IDENTITY_PROBE`), because it needs shared batch labels on both sides.
 
-### H-AGE (prerequisite)
-- **Metric:** out-of-fold R² and MAE (log-days) on held-out preps, controls only.
-- **Supports if:** R² lower bound > ⟨0.30⟩ **and** MAE ≤ BL-1 MAE (paired cluster bootstrap,
-  upper bound of MAE difference ≤ ⟨10%⟩ of BL-1 MAE).
-- **Kill:** otherwise. **Consequence:** Claim B is evaluated on the BL-1 age model, labelled
-  "hand-crafted age model". Claim A is still run.
+## 2. Decision rule (applies to every claim except C)
 
-### H-A (representation)
-- **Task:** ⟨T1: predict cytotoxicity (compound-dose mean AB < 0.7 at DIV 12) from DIV 5 and
-  DIV 7 recordings⟩. Pre-declared alternative under the ceiling rule: ⟨T2⟩.
-- **Protocol:**
-  - k ∈ {2, 5, 10, 20, 50, 100, all} labelled wells, class-balanced, drawn from train-fold preps.
-  - 50 draws per k.
-  - Evaluated on held-out-fold preps.
-- **Ours:** frozen 16-d embedding plus L2 logistic regression (C chosen by inner grouped CV
-  when k ≥ 20, else fixed C = 1.0).
-- **Competitors at every k:**
-  - BL-2: logistic regression on the inputs.
-  - BL-3: same architecture from random init, trained end-to-end for a fixed ⟨200⟩ epochs.
-  - BL-4: frozen random-init encoder plus logistic regression.
-- **Primary metric:** AUROC.
-- **Supports if:** lower bound of [AUROC_ours(k = 10) − max(AUROC_BL2, AUROC_BL3)(k = 50)]
-  > −⟨0.02⟩.
-- **Kill:** lower bound ≤ −⟨0.02⟩.
-- **Ceiling rule:** if BL-2 at k = 10 has AUROC ≥ 0.95 on dev, switch to the alternative task.
-  This is declared now and is not a kill.
+> A claim **survives** only if its cluster-bootstrap bound in the favourable direction is better
+> than the **point estimate** of the best pre-declared baseline:
+> - **lower** bound for higher-is-better metrics;
+> - **upper** bound for error metrics.
+>
+> There are no absolute thresholds. Anything else is **REFUTES**. A run that cannot compute
+> the bound, for example because there are too few clusters, is **INCONCLUSIVE**.
 
-### H-B (readout)
+## 3. Hypotheses
+
+### H-AGE-P (prerequisite, Potter)
+- **Metric:** out-of-fold MAE of log-DIV on held-out batches (all dense recordings). Also
+  reported per DIV bin (3–9, 10–16, 17–23, 24–39) without gating.
+- **Baselines:**
+  - BL-0: train-fold mean.
+  - BL-1: ridge on [log mean firing rate, log network-burst rate].
+- **Survives iff:** UB(MAE_encoder) < min(MAE_BL0, MAE_BL1).
+- **If refuted:** A and C still run and are reported with this failure attached.
+
+### H-AGE-N (prerequisite, NFA)
+- **Metric and baselines:** as H-AGE-P, on held-out TC preps (controls only).
+- **Survives iff:** UB(MAE_ridge17) < min(MAE_BL0, MAE_BL1).
+- **If refuted:** Claim B is computed on the BL-1 age model, labelled "hand-crafted age model".
+
+### H-A: representation (Potter held-out-batch forecasting) ⟨D3′, D15⟩
+- **Target:** log1p network-burst rate of the same culture at DIV t′, where t′ − t ∈ [6, 8]
+  (nearest to 7), predicted from the recording at DIV t.
+- **Labelled unit:** culture. k ∈ {1, 2, 4, 8, all}, 30 draws per k. Labelled cultures are drawn
+  from the fold's training batches only. Test = the fold's held-out batches.
+- **Methods** (all receive DIV t as input):
+  - Ours: [frozen z, DIV] → ridge.
+  - BL-A0: DIV only.
+  - BL-A1: [log mean firing rate, log burst rate, DIV] → ridge.
+  - BL-A2: same architecture from random init, trained end-to-end on k cultures, 40 epochs.
+  - BL-A3: [frozen random-init z, DIV] → ridge.
+- **Metric:** MAE, lower is better.
+- **Survives iff:** UB(MAE_ours at k = 4) < min over {BL-A0, BL-A1, BL-A2, BL-A3} of point
+  MAE at k = all.
+- **Alternative target (K3):** if fewer than 3 pairs per culture exist for at least 20 cultures,
+  the target becomes log mean firing rate at t′, with the same rule. Declared now.
+
+### H-B: readout (NFA) ⟨D14⟩
 - **Definitions:**
-  - Δ is computed out-of-fold.
-  - Within-plate effect E(c, d, t) = mean Δ(treated c at dose d, DIV t) − mean Δ(same-plate
-    controls, DIV t).
-  - Δ-AUC(c, d) is the trapezoidal AUC of E over DIV 5–12.
-  - Non-cytotoxic means compound-dose mean AB ≥ ⟨0.8⟩.
-- **B(i) Calibration:** held-out control mean Δ has a CI containing 0 **and** |mean Δ| <
-  ⟨0.10⟩ log-days. Failure voids B.
-- **B(ii) Detection:**
-  - The null distribution of Δ-AUC comes from control-vs-control pseudo-treatments (each
-    control well against the remaining same-plate controls).
-  - The threshold is set at a 5% two-sided false-positive rate.
-  - Detection rate = the fraction of compounds whose Δ-AUC at their highest non-cytotoxic
-    dose exceeds the threshold.
-  - The same procedure applied to BL-5 (best single raw feature, chosen on dev) and to BL-6
-    (Mahalanobis).
-  - **Supports if:** lower bound of (detection_Δ − detection_BL5) > −⟨0.10⟩ (non-inferiority).
-  - **Secondary:** superiority to BL-5 (lower bound > 0).
-- **B(iii) Dose-dependence:** among detected compounds, median Spearman ρ(dose, Δ-AUC) < 0 with
-  a CI excluding 0. Failure removes "dose-dependent" from the claim wording only.
-- **Mandatory sensitivity analyses** (reported, not gating):
-  - Reference = lowest-dose wells instead of column-2 controls (position confound).
-  - Cytotoxic doses reported separately.
-  - Plate-level clustering.
-- **Kill:** B(i) fails, or B(ii) non-inferiority fails.
+  - Δ = ŷ − log DIV, out-of-fold.
+  - E(c, d, t) = mean Δ(treated) − mean Δ(same-plate controls).
+  - Δ-AUC = trapezoidal area under E over DIV 5–12.
+  - Non-cytotoxic: compound-dose mean AB ≥ the 5th percentile of control-well AB in the same
+    subset.
+- **Detection:**
+  - Null: control-vs-control pseudo-treatment, each control against the remaining same-plate
+    controls, through the identical pipeline.
+  - Threshold at the 5% false-positive rate.
+  - Detection rate: the fraction of compounds whose Δ-AUC at the highest non-cytotoxic dose
+    exceeds the threshold.
+- **Gating baselines** (1-D readouts, thresholded identically):
+  - BL-B1: age residual from the BL-1 age model.
+  - BL-B2: best single raw-feature within-plate deviation AUC, chosen on dev.
+- **Reported baseline, non-gating:** BL-B3, Mahalanobis deviation (Ledoit-Wolf, 17-D).
+- **Calibration gate:** the CI of held-out control mean Δ contains 0. If not, B is REFUTED.
+- **Survives iff:** the calibration gate passes **and** LB(det_Δ) > max(det_BL-B1, det_BL-B2)
+  (point estimates).
+- **Confirmatory evaluation:** NTP, under Seal #2, with the model trained on all TC preps.
+  Headline numbers come from NTP. TC cross-fit results are reported as development.
+- **Mandatory sensitivity analyses** (non-gating):
+  - lowest-dose wells as the reference (column-2 position confound);
+  - plate-clustered intervals;
+  - cytotoxic doses reported separately;
+  - dose-response, as the median per-compound Spearman ρ(dose, Δ-AUC).
 
-### H-C (credibility)
-- **C-primary:** plate identity within prep, controls only, on the 16-d embedding.
-  - Probe: multinomial logistic, inner-CV regularisation.
-  - Leave-one-DIV-out (train on 3 DIVs, test on the 4th).
-  - Statistic: excess balanced accuracy (observed − mean of 1,000 within-prep label
-    permutations), pooled over preps and held-out DIVs.
-- **Supports (probe fails to find identity) if all hold:**
-  1. one-sided permutation p > ⟨0.05⟩;
-  2. excess balanced accuracy point estimate < ⟨0.10⟩;
-  3. excess on embedding ≤ excess on input features (no amplification). This is a paired
-     bootstrap, with the upper bound of the difference ≤ ⟨0.02⟩.
-- **Validity gate (canary):**
-  - Inject a per-plate offset of ⟨0.5⟩ SD into the inputs (random direction per plate,
-    fixed seed).
-  - Retrain the full pipeline and rerun C-primary.
-  - Power is the fraction of 20 canary seeds in which the probe is significant. Power must be
-    ≥ ⟨0.8⟩.
-  - **If the gate fails, H-C is INCONCLUSIVE, never SUPPORTS.**
-- **C-secondary** (reported, not gating): prep identity across preps, age-matched, with the
-  amplification ratio vs inputs, PCA-16 and the random-init encoder.
-- **Kill:** any of conditions 1–3 fails while the validity gate passes.
+### H-C: credibility (Potter) ⟨D13⟩
+- **Data:** dense recordings, stratified into the 4 DIV bins. The probe runs within each bin.
+- **Representation:** primary = embeddings from the final encoder trained on all 8 batches.
+  Secondary = out-of-fold embeddings.
+- **Probe:** multinomial logistic regression (inner-CV regularisation), labels = batch, under
+  the culture-within-batch split.
+  - Statistic: excess balanced accuracy, pooled over bins.
+  - Null: 1,000 permutations of batch labels at the **culture** level.
+- **Canary:**
+  - Per batch, a seeded random 10% of electrodes receive extra Poisson spikes at the corpus
+    median per-electrode rate for that DIV bin.
+  - Injected into **training** data. The encoder is retrained end-to-end and the probe rerun.
+  - 10 seeds. Power = the fraction of seeds with permutation p < 0.05.
+- **Verdict:**
+  - **SUPPORTS** iff canary power ≥ 0.8 **and** the real-batch permutation p ≥ 0.05.
+  - **REFUTES** iff canary power ≥ 0.8 and real-batch p < 0.05.
+  - **INCONCLUSIVE** iff canary power < 0.8.
+- **Reported (non-gating):** the same probe on hand-crafted features and on a random-init
+  encoder, as amplification context. ⟨If D13 is accepted: the NFA plate-within-prep probe as a
+  secondary artefact-only check.⟩
 
-## 3. Baselines (all mandatory, all ledgered)
+## 4. Baselines (all mandatory, all ledgered)
 
-BL-0 predict-mean · BL-1 ridge(MFR, burst rate) · BL-2 linear on all inputs · BL-3 same-arch from scratch
-· BL-4 frozen random-init encoder · BL-5 best single raw feature deviation · BL-6 Mahalanobis deviation
-· BL-7 EPA published hit calls (external reference only).
+| Group | Baselines |
+|---|---|
+| Age | BL-0, BL-1 |
+| A | BL-A0, BL-A1, BL-A2, BL-A3 |
+| B | BL-B1, BL-B2 (gating); BL-B3 (reported) |
+| C | canary (validity), hand-crafted and random-init probes (reported) |
 
-## 4. Exploratory vs confirmatory
+## 5. Phases
 
-- Dev (TC) runs are tagged `phase=exploratory` and are always ledgered.
-- Hyperparameters may be tuned on dev only, and only by grouped inner CV.
-- Seal #2 freezes code, configs and hyperparameters. Lockbox (NTP) runs are tagged
-  `phase=confirmatory`.
-- The report's headline numbers come from confirmatory rows only. Dev results are reported
-  alongside, labelled.
+- `exploratory`: any run before Seal #1, or TC development runs after it.
+- `confirmatory`: P runs under Seal #1 (no tuning exists to separate dev from confirmation in P),
+  and NTP runs under Seal #2.
+- `reproduction`: `reproduce.sh` re-runs.
+- `infrastructure`: disclosures, cut-order decisions, amendments.
 
-## 5. Things we will report regardless of outcome
+## 6. Disclosures
 
-- Every ledger row count by claim and verdict.
-- Every lockbox opening.
-- Every amendment.
-- The canary power curve.
-- Calibration failures.
+- **A13 (ledger row 1).** Before any split existed, the operator and assistant computed the
+  following. No model was fit, and no activity statistic was computed on Potter or Kapucu.
+  - NFA row counts, preps, plates, compounds and control-well positions; NaN fractions;
+    AB < 0.7 counts; control medians of mean firing rate and burst rate by DIV — on both TC
+    and NTP.
+  - Potter file counts, cultures per batch and DIV coverage, from index pages.
+  - The Kapucu folder listing, and one hPSC file's size, header and line count.
 
 ## Amendments
 
-_None. Amendments are appended here after Seal #1, each with date, rationale, and new seal hash._
+_None._

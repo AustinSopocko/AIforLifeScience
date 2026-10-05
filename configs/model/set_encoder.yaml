@@ -1,9 +1,11 @@
-# Stretch S-4 only.
+# Pipeline P age-pretext encoder (CORE). All values fixed at Seal #1; no tuning (D2b).
 name: set_encoder
-input: {bin_ms: 100, window_s: 300, population_rate_channel: true}
-electrode_encoder: {type: dilated_cnn1d, channels: 32, kernel: 5, dilations: [1, 4, 16]}
+input: {bin_ms: 200, window_s: 120, population_rate_channel: true, windows_per_recording_per_epoch: 2}
+electrode_encoder: {type: dilated_cnn1d, channels: [16, 32, 32], kernel: 5, dilations: [1, 4, 16]}
 pooling: [attention_pma_1seed, mean, max]
 embedding_dim: 32
-augment: {electrode_subsample_min: 16, electrode_subsample_max: 60}
-use_electrode_coordinates: false     # deliberately off (Claim C); ablation only
-ensemble: {members: 5, bagging_unit: prep}
+augment: {electrode_subsample_min: 16, electrode_subsample_max: all}
+use_electrode_coordinates: false
+age_head: linear_per_species
+ensemble: {members: 3, bagging_unit: batch}
+g_time_slimming: {trigger_cpu_minutes_per_fit: 10, bin_ms: 400, epochs: 25}   # pre-declared, applied before Seal #1 only

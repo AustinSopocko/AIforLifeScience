@@ -1,31 +1,49 @@
-# Machine-readable work-item DAG. Mirrors PLAN.md §7-8. effort: S<=2h, M~4h, L~8h.
-# critical: true = on the MVR critical path; false = droppable stretch.
+# Machine-readable work-item DAG, v2. Mirrors PLAN.md §7-9. hours = focused engineering hours.
+# pipeline: core (shared) | P (Wagenaar spike encoder: A, C) | N (NFA features: B) | out | stretch
+budget_hours: {engineering: 25.5, video_report_fixed: 10.0, total: 35.5}
+deadline: 2026-10-10
 items:
-  WI-00: {title: Data reconnaissance + kill-gate,            effort: M, critical: true,  deps: [],                          outputs: [recon/RECON.md, recon/inventory.json, data/manifests/]}
-  WI-01: {title: Repo scaffold / env / CLI / CI,              effort: S, critical: true,  deps: [],                          outputs: [pyproject.toml, environment.yml, requirements.lock, .github/workflows/ci.yml]}
-  WI-02: {title: Ledger + protocol seal + run guards,         effort: M, critical: true,  deps: [WI-01],                     outputs: [src/agepretext/validation/]}
-  WI-03: {title: NFA ingestion + harmonisation,               effort: S, critical: true,  deps: [WI-00, WI-01],              outputs: [data/processed/nfa_recordings.parquet]}
-  WI-04: {title: Index + hierarchy + split manifests,         effort: M, critical: true,  deps: [WI-02, WI-03],              outputs: [splits/nfa_dev_cv6.json, splits/nfa_lockbox.json]}
-  WI-05: {title: Preregistration + Seal 1,                    effort: S, critical: true,  deps: [WI-00, WI-04],              outputs: [PREREGISTRATION.md, protocol/prereg.yaml, protocol/seals/seal-1.json]}
-  WI-06: {title: Bootstrap / nulls / verdict engine,          effort: S, critical: true,  deps: [WI-02, WI-05],              outputs: [src/agepretext/eval/bootstrap.py, src/agepretext/eval/nulls.py, src/agepretext/eval/verdicts.py]}
-  WI-07: {title: Baselines BL-0..BL-6,                        effort: S, critical: true,  deps: [WI-04, WI-06],              outputs: [src/agepretext/eval/baselines.py]}
-  WI-08: {title: Age-pretext model (MLP ensemble, cross-fit), effort: M, critical: true,  deps: [WI-04, WI-06],              outputs: [artifacts/oof_age.parquet]}
-  WI-09: {title: Claim C probes + canary,                     effort: M, critical: true,  deps: [WI-08, WI-06],              outputs: [artifacts/claim_c/]}
-  WI-10: {title: Claim B age-deviation readout,               effort: M, critical: true,  deps: [WI-08, WI-07, WI-06],       outputs: [artifacts/claim_b/]}
-  WI-11: {title: Claim A few-shot engine,                     effort: M, critical: true,  deps: [WI-08, WI-07, WI-06],       outputs: [artifacts/claim_a/]}
-  WI-12: {title: Renderers / figures / number macros,         effort: M, critical: true,  deps: [WI-06],                     outputs: [src/agepretext/viz/, report/generated/]}
-  WI-13: {title: Seal 2 + confirmatory lockbox run,           effort: S, critical: true,  deps: [WI-09, WI-10, WI-11, WI-12], outputs: [protocol/seals/seal-2.json]}
-  WI-14: {title: reproduce.sh + clean-env test,               effort: S, critical: true,  deps: [WI-13],                     outputs: [reproduce.sh]}
-  WI-15: {title: Demo video,                                  effort: M, critical: true,  deps: [WI-12, WI-13, WI-14],       outputs: [demo/final.mp4]}
-  WI-16: {title: Technical report,                            effort: L, critical: true,  deps: [WI-12, WI-13],              outputs: [report/main.pdf]}
-  WI-17: {title: README + Kaggle writeup + packaging,         effort: S, critical: true,  deps: [WI-14, WI-15, WI-16],       outputs: [README.md]}
-  S-1:   {title: Canonical spike->feature extractor,          effort: M-L, critical: false, deps: [WI-00, WI-04]}
-  S-2:   {title: Multi-source pretext + cross-source tests,   effort: M, critical: false, deps: [S-1, WI-08]}
-  S-3:   {title: hPSC age-axis transfer (Kapucu),             effort: M, critical: false, deps: [S-1]}
-  S-4:   {title: Spike-train set encoder,                     effort: L, critical: false, deps: [WI-04, S-1]}
-  S-5:   {title: Acute pharmacology before/after,             effort: S-M, critical: false, deps: [S-3]}
-  S-6:   {title: Grouped split-conformal intervals,           effort: S, critical: false, deps: [WI-08]}
-  S-7:   {title: Docker image,                                effort: S, critical: false, deps: [WI-14]}
-stretch_priority: [S-1, S-3, S-2, S-6, S-4, S-5, S-7]
-cut_order_if_over_budget: [all_stretch, static_frames_instead_of_animation, bl3_draws_50_to_20, report_to_15_pages]
-never_cut: [WI-09 canary, WI-13 lockbox, WI-02 ledger]
+  WI-00: {title: Recon + kill-gate,                                 pipeline: core, hours: 2.0, critical: true, deps: []}
+  WI-01: {title: Scaffold / env / CLI / CI,                         pipeline: core, hours: 0.5, critical: true, deps: []}
+  WI-02: {title: Ledger + seal + guards,                            pipeline: core, hours: 1.5, critical: true, deps: [WI-01]}
+  WI-03: {title: Index + splits + invariants (both corpora),        pipeline: core, hours: 1.5, critical: true, deps: [WI-02]}
+  WI-04: {title: Cluster bootstrap / nulls / relative-rule verdicts, pipeline: core, hours: 1.5, critical: true, deps: [WI-02]}
+  WI-05: {title: Prereg final + G-time check + Seal 1,              pipeline: core, hours: 0.5, critical: true, deps: [WI-00, WI-03, WI-04]}
+  WI-P1: {title: Potter loader / binning / hand-crafted features,   pipeline: P,    hours: 2.0, critical: true, deps: [WI-03]}
+  WI-P2: {title: Set encoder + age training + cross-fit + final,    pipeline: P,    hours: 3.0, critical: true, deps: [WI-P1, WI-05], background_cpu_hours: 1.5}
+  WI-P3: {title: H-AGE-P + BL-0/BL-1,                               pipeline: P,    hours: 0.5, critical: true, deps: [WI-P2, WI-04]}
+  WI-P4: {title: Claim C batch probe + canary,                      pipeline: P,    hours: 2.5, critical: true, deps: [WI-P2, WI-04], background_cpu_hours: 1.2}
+  WI-P5: {title: Claim A held-out-batch forecasting engine,         pipeline: P,    hours: 3.0, critical: true, deps: [WI-P2, WI-04]}
+  WI-N1: {title: NFA ingestion + transforms,                        pipeline: N,    hours: 1.0, critical: false, deps: [WI-03]}
+  WI-N2: {title: Ridge age model cross-fit + H-AGE-N,               pipeline: N,    hours: 0.5, critical: false, deps: [WI-N1, WI-04, WI-05]}
+  WI-N3: {title: Claim B readout + nulls + baselines + sensitivity, pipeline: N,    hours: 2.5, critical: false, deps: [WI-N2]}
+  WI-O1: {title: Renderers (3 shots) / figure registry / macros,    pipeline: out,  hours: 2.0, critical: true, deps: [WI-04, WI-P4, WI-P5, WI-N3]}
+  WI-O2: {title: Seal 2 + NTP lockbox + reproduce.sh,               pipeline: out,  hours: 1.0, critical: true, deps: [WI-P3, WI-P4, WI-P5, WI-N3, WI-O1]}
+  WI-V:  {title: Demo video,                                        pipeline: out,  hours: 4.0, critical: true, fixed: true, deps: [WI-O1, WI-O2]}
+  WI-R:  {title: Technical report,                                  pipeline: out,  hours: 5.0, critical: true, fixed: true, deps: [WI-O1, WI-O2]}
+  WI-W:  {title: README + Kaggle writeup + packaging,               pipeline: out,  hours: 1.0, critical: true, fixed: true, deps: [WI-V, WI-R]}
+  S-1:   {title: Kapucu hPSC transfer demo + rat cross-lab check,   pipeline: stretch, hours: 2.0, critical: false, deps: [WI-P2]}
+  S-2:   {title: NFA plate-within-prep probe (D13),                 pipeline: stretch, hours: 1.0, critical: false, deps: [WI-N1, WI-04]}
+  S-3:   {title: NFA cytotoxicity prediction,                       pipeline: stretch, hours: 2.0, critical: false, deps: [WI-N2]}
+  S-4:   {title: Canary at 3 magnitudes,                            pipeline: stretch, hours: 0.5, critical: false, deps: [WI-P4]}
+  S-5:   {title: Potter sparse/small cultures in pretext,           pipeline: stretch, hours: 1.5, critical: false, deps: [WI-P2]}
+  S-6:   {title: Grouped conformal intervals,                       pipeline: stretch, hours: 1.0, critical: false, deps: [WI-P2]}
+  S-7:   {title: Docker image,                                      pipeline: stretch, hours: 1.0, critical: false, deps: [WI-O2]}
+# "critical: false" on WI-N* means off the critical path (runs in CPU-bound gaps), NOT optional; B is in the MVR.
+cut_order:
+  - {id: CUT-1, cut: all stretch items}
+  - {id: CUT-2, cut: animated shots -> static frames + live terminal, saves_h: 1.0}
+  - {id: CUT-3, cut: "Claim A k-grid -> {2,4,all}, draws 30 -> 15", saves_h: 0.5}
+  - {id: CUT-4, cut: Potter ensemble M 3 -> 1, saves_h: cpu_only}
+  - {id: CUT-5, cut: Claim B drop BL-B3 + dose-response, saves_h: 0.75}
+  - {id: CUT-6, cut: NFA lockbox -> 18-prep cross-fit (needs operator sign-off; contradicts D2), saves_h: 0.5}
+  - {id: CUT-7, cut: drop Claim B entirely, saves_h: 4.0}
+never_cut: [canary, ledger, seals, cluster_bootstrap, claim_C]
+schedule:
+  2026-10-05: [WI-00, WI-01, WI-02, WI-03, WI-04, WI-05]
+  2026-10-06: [WI-P1, WI-P2, WI-N1]
+  2026-10-07: [WI-P3, WI-P4, WI-N2, WI-N3]
+  2026-10-08: [WI-P4, WI-P5, WI-O1, WI-O2]
+  2026-10-09: [WI-V, WI-R]
+  2026-10-10: [WI-R, WI-W]
+checkpoints: {G-sched: {date: 2026-10-07, rule: "if >3h behind, apply cut_order from top; ledger it"}}

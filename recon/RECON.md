@@ -1,4 +1,4 @@
-# WI-00 Data Reconnaissance Report (TEMPLATE)
+# WI-00 Data Reconnaissance Report (TEMPLATE, v2)
 
 > Fill every ⟨…⟩ with evidence: a number, plus the script and line that produced it.
 > `make recon` must regenerate every number here from a clean environment.
@@ -16,10 +16,10 @@
 
 | Gate | Verdict | Evidence |
 |---|---|---|
-| K1 no pretext | ⟨PASS/FAIL⟩ | ⟨⟩ |
-| K2 no Claim B | ⟨PASS/FAIL⟩ | ⟨⟩ |
-| K3 no Claim A task | ⟨PASS/FAIL⟩ | ⟨⟩ |
-| K4 legal | ⟨PASS/FAIL⟩ | ⟨⟩ |
+| K1 encoder corpus (≥8 Potter dense batches parse; each ≥2 cultures with ≥5 DIVs) | ⟨PASS/FAIL⟩ | ⟨⟩ |
+| K2 Claim B (NFA available, licensable, chronic dosing) | ⟨PASS/FAIL⟩ | ⟨⟩ |
+| K3 Claim A task (≥3 (t, t+7±1) pairs per culture for ≥20 cultures) | ⟨PASS/FAIL → alt target⟩ | ⟨⟩ |
+| G-time (synthetic full-size encoder fit ≤ 10 CPU-min) | ⟨PASS/SLIM⟩ | ⟨⟩ |
 
 Signed off by operator: ⟨name, date⟩ → if all pass, proceed to WI-05. Otherwise go to the
 fallback named in `PLAN.md` §4.
@@ -29,15 +29,15 @@ fallback named in `PLAN.md` §4.
 | Source | DIV field location | Parse rate | Notes |
 |---|---|---|---|
 | NFA 2018 | `DIV` column | ⟨⟩ | |
-| Potter 2006 | filename `<batch>-<culture>-<DIV>.spk.txt.bz2` | ⟨⟩ | |
-| Kapucu 2022 | HDF5 `/DataInfo/DIV`; also filename? | ⟨⟩ | spike CSVs: where is DIV? |
-| EPAmeadev | filename `DIVnn` | ⟨⟩ | |
+| Potter 2006 (CORE) | filename `<batch>-<culture>-<DIV>.spk.txt.bz2` | ⟨⟩ | dense only |
+| Kapucu 2022 (stretch) | filename `_DIV<n>_spikes.csv` (verified) | ⟨⟩ | prep = culture-date token; check vs expLog |
 
 ## R2 — Age × culture distribution
 
 - Table per source: preps, plates/dishes, wells, recordings, DIV levels, timepoints per well.
 - Figure `recon/figures/<source>_div_by_culture.png`: heatmap of DIV × culture.
-- Descriptive check (dev controls only): Spearman ρ(DIV, meanfiringrate) = ⟨⟩,
+- Descriptive check, **after `agepretext split`**, on Potter train-designated batches only, and on
+  NFA TC dev controls only: Spearman ρ(DIV, meanfiringrate) = ⟨⟩,
   ρ(DIV, burst.per.min) = ⟨⟩.
 
 ## R3 — Age series × perturbation series

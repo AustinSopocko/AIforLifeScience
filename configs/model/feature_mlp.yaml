@@ -1,9 +1,0 @@
-name: feature_mlp
-hidden: [64, 64]
-embedding_dim: 16
-activation: gelu
-dropout: 0.1
-weight_decay: 1.0e-3
-age_head: linear
-loss: mse_log_div
-ensemble: {members: 5, bagging_unit: prep}

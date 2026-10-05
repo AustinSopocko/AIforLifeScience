@@ -1,14 +1,14 @@
-"""Demo shot 3 / report F3: identity probe failing next to a canary that succeeds (WI-12).
+"""Demo shot 3 / report F3: batch probe fails while the canary is caught (WI-O1, consumes WI-P4 output).
 
 Contract
 --------
-`render_probe_panel(probe_results, canary_results) -> Frame`: left = plate-identity confusion
-matrix on z for one pre-declared prep (the prep with most plates; tie -> lowest id); middle =
-same probe on canary-injected inputs (0.5 SD); right = permutation-null histogram with observed
-excess balanced accuracy marked + canary power curve across magnitudes with the 0.8 power line.
-Terminal overlay text (seal hash, `ledger verify` result) is passed in, not computed here.
+`render_probe_panel(probe_results, canary_results, overlay=None) -> Frame`: left = real-batch confusion
+matrix (8 x 8) on primary z for the pre-declared DIV bin (the bin with the most recordings); middle =
+the same probe after canary retraining (seed 0); right = culture-level permutation null with the observed
+excess balanced accuracy marked, and canary power (k/10 seeds detected) against the 0.8 requirement.
+Overlay text (seal hash, `ledger verify` output) is passed in, never computed here.
 """
 
 
 def render_probe_panel(probe_results: dict, canary_results: dict, overlay: str | None = None):
-    raise NotImplementedError("WI-12")
+    raise NotImplementedError("WI-O1")

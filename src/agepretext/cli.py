@@ -9,7 +9,7 @@ Contract
     index            build the RecordingIndex parquet for each source
     split            (re)generate SplitManifests; with --check, assert equality with committed splits/
     seal             canonicalise + hash the protocol, write protocol/seals/seal-N.json, git-tag it
-    train            train the age-pretext ensemble (cross-fit on dev; final model on all dev)
+    train            P: encoder cross-fit (4 folds by batch) + final; N: ridge cross-fit (6 folds by prep) + final
     eval             run baselines and claims; --phase {exploratory,confirmatory,reproduction}
     figures          regenerate every figure in the viz.figures registry
     report           write report/generated/numbers.tex and build the PDF

@@ -1,8 +1,10 @@
+# Pipeline P training. Fixed at Seal #1.
 optimizer: adamw
 lr: 1.0e-3
-epochs: 300
-early_stopping: {monitor: inner_grouped_val_mae, patience: 30}   # inner split is by prep too
-batch_size: 256
-wells: controls_only            # INVARIANT-2
+weight_decay: 1.0e-3
+epochs: 40                 # fixed; no early stopping -> no tuning surface
+batch_size: 64
+crossfit: {folds: 4, unit: batch, batches_per_fold: 2}
+final_model: all_batches   # used for Claim C primary probe and S-1
 deterministic: true
 seed: 0

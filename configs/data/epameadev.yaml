@@ -1,8 +1,0 @@
-# Cotterill et al. 2016 EPA ontogeny spike files (stretch S-1 validation target). Cite-only.
-name: epameadev_2016
-repo: https://github.com/sje30/EPAmeadev
-path: allH5Files/
-file_pattern: "{prefix}_{date}_{plate}_DIV{div}_{x}_{y}.h5"
-hierarchy: {prep: date, plate: plate, well: well, timepoint: div}
-electrodes_per_well: 16
-redistribution: cite_only_download_at_runtime

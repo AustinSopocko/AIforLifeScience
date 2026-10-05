@@ -1,8 +1,9 @@
+corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
 reference: same_plate_controls
 sensitivity_reference: lowest_dose_wells
 summary: trapezoid_auc_over_div
-non_cytotoxic_ab_ge: 0.8
+non_cytotoxic: {rule: ab_ge_control_percentile, percentile: 5}
 null: control_vs_control_within_plate
 fpr: 0.05
-comparators: [BL-5, BL-6]
-external_reference: BL-7
+gating_comparators: [BL-B1, BL-B2]
+reported_comparators: [BL-B3]

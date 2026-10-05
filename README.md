@@ -1,45 +1,40 @@
 # Age-pretext encoder for neural organ-on-chip electrophysiology
 
-> **Status: planning skeleton. Nothing is implemented yet.** Read [`PLAN.md`](PLAN.md) first.
+> **Status: planning skeleton (v2). Nothing is implemented yet.** Read [`PLAN.md`](PLAN.md).
 
-Culture age (days in vitro) is a free, noise-free label on nearly every public MEA recording.
-We train a small model to regress age from spontaneous network activity and test three
-pre-registered claims from that single training run:
+Culture age (days in vitro) is a free, noise-free label on nearly every MEA recording. We train an
+**age-pretext encoder** on spike trains to regress age, then test three pre-registered claims.
 
-- **A (representation):** the frozen embedding transfers few-shot to an unseen task.
-- **B (readout):** predicted-minus-true age is a perturbation readout ("functionally younger").
-- **C (credibility):** the representation does not encode plate or batch identity. A
-  power-calibrated probe plus canary tests this.
+| Claim | Corpus | Test |
+|---|---|---|
+| **A** representation | Wagenaar/Potter 2006 (8 batches, 30 cultures) | Frozen embedding + a 4-culture head forecasts held-out-batch network-burst rate 7 days ahead, better than every baseline trained on all cultures |
+| **B** readout | EPA NFA 2018 (18 preps; ToxCast dev, NTP sealed lockbox) | Age residual of chronically exposed wells beats firing-rate + burst-rate readouts. This is a cross-corpus replication on summary features. |
+| **C** credibility | Wagenaar/Potter | A linear probe does not detect dissection-batch identity, while a synthetic batch artefact (canary) is detected at the pre-declared power |
+
+Decision rule: a claim survives only if its cluster-bootstrap bound (culture prep as the unit)
+beats the **point estimate** of the best pre-declared baseline. There are no absolute thresholds.
 
 Validation infrastructure is a first-class deliverable:
-- [`PREREGISTRATION.md`](PREREGISTRATION.md) and [`protocol/prereg.yaml`](protocol/prereg.yaml):
-  hypotheses, baselines, nulls and kill conditions, sealed before results exist.
-- [`ledger/`](ledger/SCHEMA.md): append-only, hash-chained results ledger. Every run is
-  recorded.
+- [`PREREGISTRATION.md`](PREREGISTRATION.md) and [`protocol/prereg.yaml`](protocol/prereg.yaml).
+- A hash-chained append-only ledger ([`ledger/`](ledger/SCHEMA.md)). Row 1 is a pre-split
+  disclosure.
 - Sealed protocol hashes are required for every evaluation run.
 
-## Quickstart (target behaviour, WI-14)
+## Quickstart (target behaviour)
 
 ```bash
 conda env create -f environment.yml && conda activate agepretext
 pip install -e .
-bash reproduce.sh --profile mvr      # fetch -> index -> split -> verify seals -> train -> eval -> figures -> report
-agepretext ledger verify             # audit the results ledger
+bash reproduce.sh --profile mvr      # ≈2 h on 4 CPU cores
+agepretext ledger verify
 ```
 
 ## Data (downloaded from origin at runtime; never committed)
 
-| Source | Use | Licence |
+| Source | Role | Licence |
 |---|---|---|
-| US EPA Network Formation Assay 2018 (Shafer et al. 2019) | MVR: all three claims | EPA ScienceHub |
-| Wagenaar, Pine & Potter 2006 | stretch: multi-source pretext | cite-only |
-| Kapucu et al. 2022 (G-Node) | stretch: hPSC transfer | CC BY 4.0 |
-| Cotterill et al. 2016 (EPAmeadev) | stretch: extractor validation | cite-only |
+| Wagenaar, Pine & Potter 2006 | Encoder corpus (A, C) | cite-only |
+| US EPA NFA 2018 (Shafer et al. 2019) | Claim B | EPA ScienceHub |
+| Kapucu et al. 2022 | Stretch: human transfer demo (non-inferential) | CC BY 4.0 |
 
-## Hardware
-
-Single CPU machine: 4 cores, 16 GB RAM, about 5 GB disk for the MVR. No GPU required.
-
-## Repository map
-
-See `PLAN.md` §14.
+Hardware: one CPU machine (≥ 4 cores, 16 GB RAM, 10 GB disk). No GPU.

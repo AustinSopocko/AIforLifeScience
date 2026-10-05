@@ -1,18 +1,17 @@
-"""Pre-declared baselines BL-0..BL-7 (WI-07). configs/eval/baselines.yaml.
+"""Pre-declared baselines (WI-P3, WI-P5, WI-N3). Definitions: protocol/prereg.yaml `baselines`.
 
 Contract
 --------
-Each baseline is a function with the same signature as the model path it competes with, run
-under the SAME SplitManifest and FeatureTransform, so comparisons are paired:
-  BL-0 predict_mean            BL-1 ridge(log1p MFR, log1p burst rate)
-  BL-2 linear on all inputs    BL-3 same-arch from scratch (fixed epochs; no early stopping at small k)
-  BL-4 frozen random-init encoder + logistic regression
-  BL-5 best single raw-feature within-plate deviation AUC (feature chosen on dev only, recorded)
-  BL-6 Mahalanobis deviation AUC from same-plate controls (Ledoit-Wolf covariance)
-  BL-7 EPA published hit calls (external reference; never a competitor in a verdict)
+Each baseline runs under the SAME SplitManifest (and, for NFA, the same FeatureTransform) as the
+model it competes with, so comparisons are paired:
+  Age (both pipelines): BL-0 train mean; BL-1 ridge(log mean firing rate, log burst rate).
+  Claim A (Potter):     BL-A0 DIV only; BL-A1 hand-crafted state + DIV; BL-A2 same-arch from scratch
+                        (40 epochs, no early stopping); BL-A3 frozen random-init encoder + DIV.
+  Claim B (NFA):        BL-B1 residual of the BL-1 age model; BL-B2 best single raw-feature deviation
+                        AUC (feature chosen on TC dev, recorded); BL-B3 Mahalanobis (reported, non-gating).
 Every baseline run appends a ledger row regardless of outcome.
 """
 
 
-def run_baseline(baseline_id: str, index, features, manifest, cfg) -> dict:
-    raise NotImplementedError("WI-07")
+def run_baseline(baseline_id: str, index, payload, manifest, cfg) -> dict:
+    raise NotImplementedError("WI-P3 / WI-P5 / WI-N3")

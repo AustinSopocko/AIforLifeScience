@@ -1,8 +1,10 @@
-BL-0: {type: predict_mean}
-BL-1: {type: ridge, features: [meanfiringrate, burst.per.min]}
-BL-2: {type: linear_all_inputs}
-BL-3: {type: same_arch_from_scratch, epochs: 200}
-BL-4: {type: frozen_random_init_encoder}
-BL-5: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
-BL-6: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf}
-BL-7: {type: epa_published_hitcalls, role: external_reference}
+# Mirrors protocol/prereg.yaml `baselines`. prereg.yaml is authoritative.
+BL-0:  {type: predict_train_mean}
+BL-1:  {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate]}
+BL-A0: {type: ridge, inputs: [div]}
+BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
+BL-A2: {type: same_arch_from_scratch, epochs: 40}
+BL-A3: {type: frozen_random_init_encoder_plus_ridge}
+BL-B1: {type: age_residual, age_model: BL-1}
+BL-B2: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
+BL-B3: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf, gating: false}

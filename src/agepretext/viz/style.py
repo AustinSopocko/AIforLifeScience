@@ -1,4 +1,4 @@
-"""Shared plotting style (WI-12).
+"""Shared plotting style (WI-O1).
 
 Contract
 --------
@@ -10,8 +10,8 @@ required on every frame and figure.
 
 
 def apply_style() -> None:
-    raise NotImplementedError("WI-12")
+    raise NotImplementedError("WI-O1")
 
 
 def stamp(fig, protocol_hash: str, row_id: str) -> None:
-    raise NotImplementedError("WI-12")
+    raise NotImplementedError("WI-O1")

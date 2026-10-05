@@ -1,4 +1,5 @@
-include: [data/nfa.yaml, features/nfa17.yaml, model/feature_mlp.yaml, train/pretext.yaml,
+include: [data/potter.yaml, data/nfa.yaml, features/potter_handcrafted.yaml, features/nfa17.yaml,
+          model/set_encoder.yaml, model/ridge_age.yaml, train/pretext.yaml,
           eval/baselines.yaml, eval/claim_a.yaml, eval/claim_b.yaml, eval/claim_c.yaml]
-splits: {dev: splits/nfa_dev_cv6.json, lockbox: splits/nfa_lockbox.json}
+splits: {potter: splits/potter_cv4.json, nfa_dev: splits/nfa_dev_cv6.json, nfa_lockbox: splits/nfa_lockbox.json}
 lockbox: true

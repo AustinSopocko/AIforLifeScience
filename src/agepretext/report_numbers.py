@@ -1,4 +1,4 @@
-"""Report number macros (WI-12).
+"""Report number macros (WI-O1).
 
 Contract
 --------
@@ -13,8 +13,8 @@ numbers, citations).
 
 
 def write_numbers_tex(ledger_path: str, out_path: str, phase: str = "confirmatory") -> None:
-    raise NotImplementedError("WI-12")
+    raise NotImplementedError("WI-O1")
 
 
 def check_no_literal_numbers(sections_dir: str) -> None:
-    raise NotImplementedError("WI-12")
+    raise NotImplementedError("WI-O1")

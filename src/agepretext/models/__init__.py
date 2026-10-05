@@ -1,1 +1,1 @@
-"""Models: feature MLP (MVR), set encoder (stretch S-4), heads, cluster-bagged ensemble."""
+"""Models. Pipeline P: electrode-set age-pretext encoder. Pipeline N: ridge age model. Shared: heads, ensemble."""

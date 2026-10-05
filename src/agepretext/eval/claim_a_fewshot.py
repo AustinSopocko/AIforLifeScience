@@ -1,16 +1,16 @@
-"""Claim A: few-shot transfer engine (WI-11). configs/eval/claim_a.yaml.
+"""Claim A: held-out-batch forecasting few-shot engine (WI-P5). configs/eval/claim_a.yaml.
 
 Contract
 --------
-`run_fewshot(task, oof_embeddings, index, manifest, cfg) -> Iterator[FewShotEvent]` yields
-events (k, method, draw, fold, auroc) INCREMENTALLY so viz.fewshot_curve can animate live
-(demo shot 2). For each k in cfg.k_values and each of cfg.draws_per_k draws: sample k labelled
-recordings, class-balanced, ONLY from train-fold preps (SplitPurpose.FEWSHOT); evaluate on
-held-out-fold preps. Methods: ours (frozen z + logistic), BL-2, BL-3, BL-4 — all at every k.
-`summarise(events, prereg) -> dict` computes the curve with cluster CIs, the ceiling rule, and
-the primary non-inferiority test (ours@10 vs best of BL-2/BL-3 @50) via eval.verdicts.
-Labels for T1 are compound-dose level (AB < 0.7); recordings of the same compound-dose never
-straddle train and test because compounds are nested in preps.
+Pairs: within each Potter culture, (recording at DIV t, target = log1p network-burst rate at DIV t')
+with t' - t in [6, 8], nearest to 7 (alternative target if K3 fires: log mean firing rate at t').
+`run_fewshot(oof_z, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]` yields events INCREMENTALLY
+(for demo shot 2). For each fold, k in {1,2,4,8,all}, draw in 1..30: sample k labelled CULTURES from the
+fold's train batches only (SplitPurpose.FEWSHOT); fit each method; evaluate MAE on all pairs of the
+fold's held-out batches. Methods: ours ([frozen out-of-fold z, DIV] -> ridge), BL-A0, BL-A1, BL-A2,
+BL-A3 — every method at every k; every method receives DIV.
+`summarise(events, prereg) -> dict`: curve with batch-clustered CIs (culture-clustered sensitivity) and
+the primary verdict (UB(ours@k=4) < min baseline point MAE @k=all) via eval.verdicts.
 """
 from dataclasses import dataclass
 from typing import Iterator
@@ -22,12 +22,12 @@ class FewShotEvent:
     method: str
     draw: int
     fold: str
-    auroc: float
+    mae: float
 
 
-def run_fewshot(task: str, oof_embeddings, index, manifest, cfg) -> Iterator[FewShotEvent]:
-    raise NotImplementedError("WI-11")
+def run_fewshot(oof_z, pairs, index, manifest, cfg) -> Iterator[FewShotEvent]:
+    raise NotImplementedError("WI-P5")
 
 
 def summarise(events, prereg: dict) -> dict:
-    raise NotImplementedError("WI-11")
+    raise NotImplementedError("WI-P5")

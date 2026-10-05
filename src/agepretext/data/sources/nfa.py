@@ -1,4 +1,4 @@
-"""EPA NFA 2018 loader (WI-03). Facts verified in PLAN.md §3.
+"""EPA NFA 2018 loader (WI-N1; Pipeline N, Claim B only — never encoder input). Facts verified in PLAN.md §3.
 
 Contract
 --------
@@ -12,8 +12,9 @@ Contract
 Post-conditions (asserted): TC rows == 11,512 and NTP rows == 5,712 unless WI-00 records a
 different verified count; every prep has controls at >= 3 DIVs; DIV in {5, 7, 9, 12}.
 No transforms are applied here — transforms are fit per fold in features/harmonise.py.
+The NFA plate layout (row, col) is kept for the Claim B column-2 position sensitivity analysis.
 """
 
 
 def load(cfg: dict):
-    raise NotImplementedError("WI-03")
+    raise NotImplementedError("WI-N1")

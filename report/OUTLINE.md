@@ -1,23 +1,23 @@
-# Technical report outline (15–20 pages), draft
+# Technical report outline (15–20 pages), v2
 
-Built by `agepretext report`. LaTeX lives in `report/main.tex` and `report/sections/`.
-Generated inputs: `report/generated/numbers.tex` (macros tied to ledger `row_id`s) and
-`report/generated/fig_*.pdf` from the `viz/figures.py` registry. CI fails if a section file
-contains a literal result number that is not a macro.
+Budget: 5 h of the fixed 10 h block (WI-R).
+- Build: `agepretext report` (LaTeX).
+- Generated inputs: `report/generated/numbers.tex` (macros tied to ledger `row_id`s) and
+  figures from `viz/figures.py`.
+- CI fails if the prose contains a literal result number.
+- Terminology: "age-pretext encoder" only.
 
-| § | Section | Pages | Figures / tables | Source |
-|---|---|---|---|---|
-| 1 | Abstract and contributions (three claims, one run, falsifiable credibility) | 1 | — | numbers.tex |
-| 2 | Problem and impact: maturity readouts for neural organ-on-chip; DNT screening; the sponsor digital-twin precondition (PLAN §13) | 2 | F0 concept diagram (static, versioned SVG) | — |
-| 3 | Data: sources, hierarchy, licences, what is *not* available (no NFA spike lists, no human age×perturbation) | 2 | F1 hierarchy and DIV×prep overview, T1 data table | recon/inventory.json |
-| 4 | Method: features, age target, model, ensemble, cross-fitting, invariants | 2.5 | F2 pipeline diagram | configs |
-| 5 | Validation protocol: preregistration, seals, ledger, verdict engine, cluster bootstrap, canary | 2 | F7 workflow, T2 baselines + kill conditions (rendered from prereg.yaml) | prereg.yaml |
-| 6 | Results — age model | 1 | F2b calibration (pred vs true, held-out preps) | ledger |
-| 7 | Results — Claim C (placed first among claims on purpose) | 2 | F3 probe panel + canary power curve | ledger |
-| 8 | Results — Claim B | 2.5 | F4 trajectories, F5 detection vs BL-5/BL-6, sensitivity table | ledger |
-| 9 | Results — Claim A | 1.5 | F6 few-shot curve | ledger |
-| 10 | Limitations and threats to validity: feature-level input, rat-only, position confound, compound-dose labels, small lockbox | 1.5 | — | — |
-| 11 | Reproducibility: one command, runtime, hardware, ledger audit trail | 0.5 | F8 ledger timeline | ledger |
-| — | References, appendix (full ledger summary, amendments) | 1–2 | T3 ledger summary | ledger |
-
-The page total is about 19, so §10 can absorb slack.
+| § | Section | Pages | Figures / tables |
+|---|---|---|---|
+| 1 | Abstract and contributions: one age pretext, three claims, relative decision rule, falsifiable credibility | 1 | — |
+| 2 | Problem and impact: maturity readouts for neural organ-on-chip; DNT screening; sponsor digital-twin precondition | 2 | F0 concept (static) |
+| 3 | Data and roles: Potter (encoder; A, C), NFA (B, cross-corpus replication), Kapucu (why it cannot be inferential: one prep carries the hPSC series) | 2 | F1 corpora/roles/hierarchy, T1 data and licences |
+| 4 | Method: binned spikes, set encoder, log-DIV, cluster-bagged ensemble, cross-fitting; NFA ridge path; shared evaluation core | 2.5 | F2a architecture |
+| 5 | Validation protocol: preregistration, relative rule, seals, ledger (incl. A13 genesis row), canary, invariants | 2 | F7 workflow, T2 hypotheses/baselines (rendered from prereg.yaml) |
+| 6 | Age prerequisite (both corpora) | 1 | F2b calibration by DIV bin |
+| 7 | Claim C (first among claims) | 2 | F3 probe + canary |
+| 8 | Claim A | 1.5 | F6 forecasting curve |
+| 9 | Claim B | 2 | F4 trajectories, F5 detection vs BL-B1/B2 (B3 reported), sensitivity table incl. plate-clustered |
+| 10 | Limitations: biology-vs-artefact in batch identity; feature-only NFA; rat-only core; column-2 confound; human data cannot support inference; no hyperparameter tuning in P (deliberate) | 1.5 | — |
+| 11 | Reproducibility | 0.5 | F8 ledger timeline |
+| — | References, appendix (ledger summary, cut-order decisions, amendments) | 1–2 | T3 |

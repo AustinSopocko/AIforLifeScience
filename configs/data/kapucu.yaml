@@ -1,10 +1,16 @@
-# Kapucu et al. 2022 (stretch S-3/S-5). CC BY 4.0. NEVER download raw HDF5 (2.3 TiB): spike CSVs only.
+# Kapucu et al. 2022 — stretch S-1 (non-inferential human transfer demo). CC BY 4.0. Spike CSVs only; *.h5 forbidden.
 name: kapucu_2022
 doi: 10.12751/g-node.wvr3jf
-repo: https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset
-allowed_globs: ["*_spikes.csv", "expLog.csv", "noisy_electrodes_*.csv"]
+raw_base: https://gin.g-node.org/NeuroGroup_TUNI/Comparative_MEA_dataset/raw/master/
+allowed_globs: ["*_spikes.csv", "*_expLog.csv", "noisy_electrodes_*.csv"]
 forbidden_globs: ["*.h5"]
-plates: {hPSC: [hPSC_MEA1, hPSC_MEA2, hPSC_MEA3, hPSC_MEA4, hPSC_MEA5], rat: [Rat_MEA1, Rat_MEA2, Rat_MEA3, Rat_MEA4]}
-hierarchy: {prep: plate, plate: plate, well: well, timepoint: div}
-electrodes_per_well: {12well: 64, 48well: 16}
+spike_csv_format: {header: [Channel, Time], channel: "<well>_<electrode>", time_unit: s}
+verified_preps:   # culture-date token -> plates, DIVs (PLAN §2.2)
+  hPSC_20517:  {plates: [hPSC_MEA1, hPSC_MEA2], divs: [3, 7, 10, 14, 17, 21, 24, 28, 31, 35, 38, 42, 45, 48, 51, 56, 59, 63, 66]}
+  hPSC_171017: {plates: [hPSC_MEA4], divs: [21, 24, 28]}
+  hPSC_21018:  {plates: [hPSC_MEA5], divs: [70, 73, 77]}
+  Rat_190617:  {plates: [Rat_MEA1],  divs: [2, 7, 10, 14, 17, 21, 24, 28, 31, 35]}
+  Rat_250417:  {plates: [Rat_MEA3],  divs: [21, 24, 28]}
+  Rat_31017:   {plates: [Rat_MEA4],  divs: [24, 28, 31]}
+inferential_use: false       # one prep carries the whole hPSC age series; see PLAN §2.2
 redistribution: allowed_with_attribution
