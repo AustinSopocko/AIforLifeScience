@@ -303,8 +303,10 @@ Both are needed because an identity probe must see each identity on both sides.
   - k ∈ {**1, 2, 4, 8, 16**, all = 24}. **The full curve is required**, and it is demo shot 2.
   - 30 draws per k. BL-A2 gets 5 random-init seeds per draw.
 - **Training pairs:** every pair of each labelled well, any DIV.
-- **Evaluation pairs:** the held-out prep's pairs with t ∈ {21, 24}. This is the common overlap
-  window, so test ages are comparable across folds. Pre-declared.
+- **Evaluation pairs:** the held-out prep's own 7-day pairs with t ∈ {21, 24}. These are per-prep,
+  not shared: 190617 has 21→28 and 24→31, 250417 has 21→28 only, 31017 has 24→31 only. Folds
+  therefore differ in age transition; the report must flag this. No prep is dropped to force a
+  common pair. Pre-declared.
 
 **Methods** (every method receives DIV t as an input):
 - **Ours:** [frozen z, DIV] → ridge.
@@ -729,15 +731,15 @@ The ledger format is in `ledger/SCHEMA.md`. Row 1 is the A13 disclosure; row 2 i
 | D4 | Adopted | Prep is the unit. Plate and culture intervals are sensitivity only. |
 | D5 | Adopted | Relative rule. Canary rule for C. |
 | D7 / deadline | Adopted | Hard cutoff 09 Oct 23:59 UK. Schedule in §8. |
-| D8 | Adopted as a gate | G-time on real data before Seal #1; 4 h projection; shrink ladder (§4). This container: 4 cores, 15 GB RAM. **If you build elsewhere, tell me the core count.** The gate measures it either way. |
+| D8 | **Adopted** | Build machine: 4 cores, 15 GB RAM, CPU-only. G-time on real data before Seal #1; 4 h projection; shrink ladder (§4). |
 | D9, D10, D12 | Adopted | English LaTeX with our own template. Runtime download, nothing mirrored. Stretch priority S-1 → S-7. |
 | D11 | Adopted | "Age-pretext encoder" |
 | D13 | Adopted, **promoted** | C1 (NFA plate within prep) is primary. Claim C holds iff C1 holds (§5.7). |
 | D14 | Adopted | BL-B3 reported, not gating |
 | D15 | Adopted | 4 vs all is primary. Full curve required. |
 | D16 | **Done** | §6b, with the report outline and storyboard written to match |
-| **D17** | **Open: needed before Seal #1** | Inference for Claim A with 3 prep clusters. (a) Worst-fold rule (recommended). (b) Pool wells as the cluster unit (breaks D4). (c) Gate on Wagenaar-internal forecasting (8 batches) and report cross-lab without gating. |
-| **D18** | **My resolution; object if wrong** | Claim C holds iff C1 SUPPORTS; C2 sets the wording only. If C1 REFUTES, B falls (readout not attributable to biology). |
+| **D17** | **Adopted** | Claim A uses the worst-fold rule: in every one of the 3 held-out Kapucu preps, the well-level bootstrap UB of MAE(ours, k = 4) must be below the best baseline's point MAE at k = all. |
+| **D18** | **Adopted** | Claim C holds iff C1 SUPPORTS; C2 sets the wording only. If C1 REFUTES, B falls with it (readout not attributable to biology). |
 
 ## 16. Assumptions (flag for review)
 

@@ -1,0 +1,39 @@
+# Manifest of every artefact the finished pipeline emits. reproduce.sh prints it.
+# status: TODO (not built) | DONE (reproduce.sh fails if a DONE path is missing).
+# Rule: nothing enters the report that is not listed here and emitted by reproduce.sh.
+artefacts:
+  - {wi: WI-00, path: data/manifests/nfa.sha256,                 status: TODO, what: sha256 manifest, NFA 2018}
+  - {wi: WI-00, path: data/manifests/potter.sha256,              status: TODO, what: sha256 manifest, Wagenaar dense}
+  - {wi: WI-00, path: data/manifests/kapucu_rat.sha256,          status: TODO, what: sha256 manifest, Kapucu rat CSVs}
+  - {wi: WI-00, path: recon/inventory.json,                      status: TODO, what: scripted re-derivation of PLAN §2.3/§3 counts + K1-K3}
+  - {wi: WI-02, path: ledger/results.jsonl,                      status: TODO, what: "every run appended + `ledger verify` passes (rows 1-2 exist; verifier not built)"}
+  - {wi: WI-03, path: data/processed/recording_index.parquet,    status: TODO, what: RecordingIndex, all corpora}
+  - {wi: WI-03, path: splits/potter_cv4.json,                    status: TODO, what: Wagenaar 4-fold batch cross-fit manifest}
+  - {wi: WI-03, path: splits/kapucu_rat_lopo.json,               status: TODO, what: Kapucu rat leave-one-prep-out manifest}
+  - {wi: WI-03, path: splits/nfa_dev_cv6.json,                   status: TODO, what: NFA TC 6-fold manifest}
+  - {wi: WI-03, path: splits/nfa_lockbox.json,                   status: TODO, what: NFA TC dev / NTP lockbox manifest}
+  - {wi: G-time, path: artifacts/g_time.json,                    status: TODO, what: real-data timing, 4h projection, shrink steps applied}
+  - {wi: WI-05, path: protocol/seals/seal-1.json,                status: TODO, what: Seal 1}
+  - {wi: WI-P1, path: data/processed/potter_bins/,               status: TODO, what: Wagenaar binned spike tensors}
+  - {wi: WI-P1, path: data/processed/potter_handcrafted.parquet, status: TODO, what: mean firing rate + network-burst rate}
+  - {wi: WI-P2, path: artifacts/potter/oof.parquet,              status: TODO, what: out-of-fold age predictions + z}
+  - {wi: WI-P2, path: artifacts/potter/final_encoder/,           status: TODO, what: final age-pretext encoder (all 8 batches)}
+  - {wi: WI-P3, path: artifacts/potter/h_age_p.json,             status: TODO, what: H-AGE-P result + verdict}
+  - {wi: WI-P4, path: artifacts/potter/claim_c2/,                status: TODO, what: C2 batch probe + 10 canaries + verdict}
+  - {wi: WI-K1, path: data/processed/kapucu_rat_bins/,           status: TODO, what: Kapucu rat binned tensors}
+  - {wi: WI-K1, path: data/processed/kapucu_rat_pairs.parquet,   status: TODO, what: per-prep 7-day pairs}
+  - {wi: WI-P5, path: artifacts/kapucu/claim_a/,                 status: TODO, what: full few-shot curve events + worst-fold verdict}
+  - {wi: WI-N1, path: data/processed/nfa_recordings.parquet,     status: TODO, what: NFA tidy table}
+  - {wi: WI-N2, path: artifacts/nfa/oof.parquet,                 status: TODO, what: ridge age out-of-fold predictions}
+  - {wi: WI-N2, path: artifacts/nfa/h_age_n.json,                status: TODO, what: H-AGE-N result + verdict}
+  - {wi: WI-N3, path: artifacts/nfa/claim_b/,                    status: TODO, what: calibration, detection, sensitivity, trajectories}
+  - {wi: WI-N4, path: artifacts/nfa/claim_c1/,                   status: TODO, what: C1 plate-within-prep probe + 20 canaries + verdict}
+  - {wi: WI-O2, path: protocol/seals/seal-2.json,                status: TODO, what: Seal 2}
+  - {wi: WI-O2, path: artifacts/nfa/lockbox_ntp/,                status: TODO, what: confirmatory B + C1 on NTP}
+  - {wi: WI-O2, path: artifacts/verdicts.json,                   status: TODO, what: claim status + case number (PLAN §6b)}
+  - {wi: WI-O1, path: report/generated/numbers.tex,              status: TODO, what: number/verdict/case macros}
+  - {wi: WI-O1, path: report/generated/fig_F1-F8.pdf,            status: TODO, what: figures F1-F8 (SKIPPED for now)}
+  - {wi: WI-O1, path: demo/frames/,                              status: TODO, what: shot 1-3 frame sequences (SKIPPED for now)}
+  - {wi: WI-R,  path: report/main.pdf,                           status: TODO, what: report skeleton / LaTeX + PDF (SKIPPED for now)}
+  - {wi: WI-V,  path: demo/STORYBOARD.md + demo/final.mp4,       status: TODO, what: storyboard + video (SKIPPED for now)}
+  - {wi: WI-W,  path: writeup/kaggle_writeup.md,                 status: TODO, what: Kaggle writeup}

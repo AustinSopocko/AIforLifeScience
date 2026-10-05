@@ -9,12 +9,12 @@ description = "Age-pretext encoder for neural MEA electrophysiology (planning sk
 requires-python = ">=3.11,<3.12"
 dependencies = [
   "numpy", "pandas", "pyarrow", "scipy", "scikit-learn",
-  "torch",            # CPU wheel; pinned in requirements.lock
+  "torch",            # CPU wheel; exact pins in requirements.lock
   "matplotlib", "pyyaml", "h5py", "openpyxl",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "hypothesis", "pre-commit", "pip-tools"]
+dev = ["pytest"]
 
 [project.scripts]
 agepretext = "agepretext.cli:main"

@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
-# Single entry point that reproduces every headline number and figure (WI-14).
-# Usage: bash reproduce.sh [--profile smoke|mvr|full]
-# Contract:
-#   1. fetch      - download sources from origin, verify sha256 against data/manifests/
-#   2. index      - build RecordingIndex (prep > plate > well > recording)
-#   3. split      - regenerate SplitManifests and check they match committed splits/*.json
-#   4. seal check - verify protocol hash matches the latest seal (refuses on dirty tree)
-#   5. train      - P: age-pretext encoder, 4-fold batch cross-fit + final; N: ridge age, 6-fold TC cross-fit + final
-#   6. eval       - H-AGE-P/N, H-A, H-C (Potter), H-B (NFA TC + NTP lockbox), all baselines (phase=reproduction rows)
-#   7. figures    - every report/video figure from artefacts + ledger
-#   8. report     - numbers.tex + PDF
+# Submission entry point. Must stay green (exit 0). Usage: bash reproduce.sh [--profile smoke|mvr|full]
+# S0: environment + stub/config sanity, then prints the artefact manifest (artefacts.yaml).
+# Nothing is computed yet; every unbuilt artefact is listed as TODO. No network, no data access.
 set -euo pipefail
-echo "reproduce.sh: not implemented (planning skeleton). See PLAN.md WI-O2." >&2
-exit 1
+cd "$(dirname "$0")"
+PROFILE=mvr
+[[ "${1:-}" == "--profile" ]] && PROFILE="${2:-mvr}"
+python - "$PROFILE" <<'PY'
+import glob, importlib, os, pkgutil, sys
+import yaml
+import agepretext
+profile = sys.argv[1]
+assert os.path.exists(f"configs/profiles/{profile}.yaml"), f"unknown profile {profile}"
+mods = [m.name for m in pkgutil.walk_packages(agepretext.__path__, "agepretext.")]
+for m in mods:
+    importlib.import_module(m)
+cfgs = glob.glob("configs/**/*.yaml", recursive=True) + ["protocol/prereg.yaml", "workitems.yaml"]
+for f in cfgs:
+    yaml.safe_load(open(f))
+arts = yaml.safe_load(open("artefacts.yaml"))["artefacts"]
+missing = [a["path"] for a in arts if a["status"] == "DONE" and not glob.glob(a["path"].split(" ")[0])]
+todo = sum(a["status"] == "TODO" for a in arts)
+print(f"reproduce.sh profile={profile}: {len(mods)} modules import, {len(cfgs)} YAML files parse")
+print("ARTEFACT MANIFEST")
+for a in arts:
+    print(f"  [{a['status']}] {a['wi']:<6} {a['path']:<44} {a['what']}")
+print(f"{len(arts)} artefacts: {len(arts) - todo} DONE, {todo} TODO")
+if missing:
+    sys.exit(f"DONE artefacts missing: {missing}")
+PY

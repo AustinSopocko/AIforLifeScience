@@ -1,4 +1,4 @@
-# WI-01/WI-02. Runs invariant tests and ledger verification on every push.
+# S0 CI: clean CPU install from the lockfile, stub tests, and the entry point must exit 0.
 name: ci
 on: [push, pull_request]
 jobs:
@@ -6,11 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
-      - run: pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
-      - run: pytest -q
-      # Enabled once WI-02 lands:
-      # - run: agepretext ledger verify --against origin/${{ github.base_ref || 'main' }}
-      # - run: bash reproduce.sh --profile smoke
+      - run: pip install -q -r requirements.lock && pip install -q -e . --no-deps
+      - run: pytest -q -rN --no-header
+      - run: bash reproduce.sh --profile smoke
+      - run: bash reproduce.sh --profile mvr
