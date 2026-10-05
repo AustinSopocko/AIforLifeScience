@@ -11,5 +11,5 @@ ensemble: {members: 3, bagging_unit: batch}
 g_time:                       # D8: real data, before Seal #1
   measure: one_forward_backward_on_one_potter_culture_all_recordings
   project: [crossfit_4_folds_x_members, final_x_members, canary_10_retrains, kapucu_bl_a2_fits]
-  max_projected_wallclock_h: 4
+  max_projected_wallclock_h: 8          # operator revision 2026-10-05: 4 h was a proxy for one overnight run
   shrink_ladder: [{bin_ms: 400}, {channels: [8, 16, 16]}, {epochs: 25}, {members: 1}]   # apply in order until <= 4h; ledger each step

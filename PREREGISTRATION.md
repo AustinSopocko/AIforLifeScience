@@ -104,6 +104,9 @@
 - **Sensitivity, not gating:** lowest-dose reference; plate-clustered intervals; cytotoxic
   doses separately.
 - **Credibility dependency:** if H-C1 REFUTES, B falls regardless of this verdict.
+- **Deviation 3 (compound overlap):** five NTP lockbox compounds (bisphenol AF, captan, parathion, phenanthrene,
+  rotenone) are also in ToxCast dev. Confirmatory detection is reported with and without them; for those five the
+  lockbox tests unseen preps, not unseen compounds.
 
 ### H-C1: artefact-only identity probe (NFA), PRIMARY for Claim C
 - **Representation:** per control well, the Δ trajectory over DIV 5/7/9/12 (TC from cross-fit;

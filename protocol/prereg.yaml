@@ -63,6 +63,7 @@ hypotheses:
     reported_baselines: [BL-B3]
     sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate]
     credibility_dependency: {hypothesis: H-C1, claim_falls_if: REFUTES}
+    confirmatory_report_with_and_without_dev_overlap_compounds: [bisphenol af, captan, parathion, phenanthrene, rotenone]   # deviation 3: unseen preps, not unseen compounds
   H-C1:
     role: primary_claim_C
     corpus: nfa_all_18_preps
