@@ -8,11 +8,11 @@ artefacts:
   - {wi: WI-00, path: data/manifests/kapucu_rat.sha256,          status: DONE, tracked: true, what: "sha256 manifest, Kapucu rat CSVs"}
   - {wi: WI-00, path: recon/inventory.json,                      status: DONE, tracked: true, what: "scripted re-derivation of PLAN §2.3/§3 counts + K1-K3"}
   - {wi: WI-02, path: ledger/results.jsonl,                      status: DONE, tracked: true, what: "hash-chained ledger; `agepretext ledger verify` passes (CI-checked)"}
-  - {wi: WI-03, path: data/processed/recording_index.parquet,    status: TODO, what: "RecordingIndex, all corpora"}
-  - {wi: WI-03, path: splits/potter_cv4.json,                    status: TODO, what: "Wagenaar 4-fold batch cross-fit manifest"}
-  - {wi: WI-03, path: splits/kapucu_rat_lopo.json,               status: TODO, what: "Kapucu rat leave-one-prep-out manifest"}
-  - {wi: WI-03, path: splits/nfa_dev_cv6.json,                   status: TODO, what: "NFA TC 6-fold manifest"}
-  - {wi: WI-03, path: splits/nfa_lockbox.json,                   status: TODO, what: "NFA TC dev / NTP lockbox manifest"}
+  - {wi: WI-03, path: data/processed/recording_index.parquet,    status: DONE, tracked: false, what: "RecordingIndex, all corpora"}
+  - {wi: WI-03, path: splits/potter_cv4.json,                    status: DONE, tracked: true, what: "Wagenaar 4-fold batch cross-fit manifest"}
+  - {wi: WI-03, path: splits/kapucu_rat_lopo.json,               status: DONE, tracked: true, what: "Kapucu rat leave-one-prep-out manifest"}
+  - {wi: WI-03, path: splits/nfa_dev_cv6.json,                   status: DONE, tracked: true, what: "NFA TC 6-fold manifest"}
+  - {wi: WI-03, path: splits/nfa_lockbox.json,                   status: DONE, tracked: true, what: "NFA TC dev (12 preps) / NTP-only lockbox (5 preps; 20171011 shared -> dev)"}
   - {wi: G-time, path: artifacts/g_time.json,                    status: TODO, what: "real-data timing, 4h projection, shrink steps applied"}
   - {wi: WI-05, path: protocol/seals/seal-1.json,                status: TODO, what: "Seal 1"}
   - {wi: WI-P1, path: data/processed/potter_bins/,               status: TODO, what: "Wagenaar binned spike tensors"}

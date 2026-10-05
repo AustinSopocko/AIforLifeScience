@@ -12,4 +12,3 @@ jobs:
       - run: pytest -q -rN --no-header
       - run: python -m agepretext.cli ledger verify
       - run: bash reproduce.sh --profile smoke
-      - run: bash reproduce.sh --profile mvr

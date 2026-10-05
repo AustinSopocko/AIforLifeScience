@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Submission entry point. Must stay green (exit 0). Usage: bash reproduce.sh [--profile smoke|mvr|full]
-# S0: environment + stub/config sanity, then prints the artefact manifest (artefacts.yaml).
-# Nothing is computed yet; every unbuilt artefact is listed as TODO. No network, no data access.
+# smoke: ledger verify + stub/config sanity + manifest (no data; used by CI).
+# mvr/full: also fetch (sha256-verified), recon inventory, index, split --check, then the built pipeline stages.
 set -euo pipefail
 cd "$(dirname "$0")"
-python -m agepretext.cli ledger verify
 PROFILE=mvr
 [[ "${1:-}" == "--profile" ]] && PROFILE="${2:-mvr}"
+python -m agepretext.cli ledger verify
+if [[ "$PROFILE" != "smoke" ]]; then
+  python -m agepretext.cli fetch            # verify against data/manifests (downloads only if missing)
+  python -m agepretext.cli recon
+  python -m agepretext.cli index
+  python -m agepretext.cli split --check    # splits are frozen; re-derivation must match byte-for-byte
+fi
 python - "$PROFILE" <<'PY'
 import glob, importlib, os, pkgutil, sys
 import yaml

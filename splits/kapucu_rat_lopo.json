@@ -1,0 +1,44 @@
+{
+ "folds": {
+  "fold0": {
+   "test": [
+    "250417"
+   ],
+   "train": [
+    "190617",
+    "31017"
+   ]
+  },
+  "fold1": {
+   "test": [
+    "31017"
+   ],
+   "train": [
+    "190617",
+    "250417"
+   ]
+  },
+  "fold2": {
+   "test": [
+    "190617"
+   ],
+   "train": [
+    "250417",
+    "31017"
+   ]
+  }
+ },
+ "name": "kapucu_rat_lopo",
+ "partitions": {
+  "all": [
+   "190617",
+   "250417",
+   "31017"
+  ]
+ },
+ "purpose": "fewshot",
+ "seed": 20261007,
+ "sha256": "63cb45fad46be5e9b3d2ace69ff6d8c476cc19851adeeb4e7ffe6c0cd4132391",
+ "source": "kapucu_rat",
+ "unit": "prep"
+}
