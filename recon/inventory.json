@@ -1,0 +1,116 @@
+{
+ "gates": {
+  "K1": "PASS",
+  "K2": "PASS (files available; chronic dosing not verifiable from files, see PLAN A3)",
+  "K3": "PASS"
+ },
+ "kapucu_rat_190617": {
+  "divs": [
+   2,
+   7,
+   10,
+   14,
+   17,
+   21,
+   24,
+   28,
+   31,
+   35
+  ],
+  "plate": "Rat_MEA1",
+  "seven_day_pairs_per_well": 8,
+  "wells_with_spikes_any_div": 12,
+  "wells_with_spikes_both_ends_eval_pairs": {
+   "21->28": 12,
+   "24->31": 12
+  }
+ },
+ "kapucu_rat_250417": {
+  "divs": [
+   21,
+   24,
+   28
+  ],
+  "plate": "Rat_MEA3",
+  "seven_day_pairs_per_well": 1,
+  "wells_with_spikes_any_div": 12,
+  "wells_with_spikes_both_ends_eval_pairs": {
+   "21->28": 12
+  }
+ },
+ "kapucu_rat_31017": {
+  "divs": [
+   24,
+   28,
+   31
+  ],
+  "plate": "Rat_MEA4",
+  "seven_day_pairs_per_well": 1,
+  "wells_with_spikes_any_div": 12,
+  "wells_with_spikes_both_ends_eval_pairs": {
+   "24->31": 12
+  }
+ },
+ "nfa_NTP": {
+  "control_wells": 180,
+  "div_levels": [
+   5,
+   7,
+   9,
+   12
+  ],
+  "plates": 33,
+  "preps": 6,
+  "preps_with_controls_at_ge3_divs": 6,
+  "rows": 5712,
+  "treatments": 50
+ },
+ "nfa_TC": {
+  "control_wells": 363,
+  "div_levels": [
+   5,
+   7,
+   9,
+   12
+  ],
+  "plates": 66,
+  "preps": 12,
+  "preps_with_controls_at_ge3_divs": 12,
+  "rows": 11512,
+  "treatments": 102
+ },
+ "potter_dense": {
+  "batches": 8,
+  "cultures": 30,
+  "cultures_per_batch": {
+   "1": 5,
+   "2": 6,
+   "3": 6,
+   "4": 2,
+   "5": 3,
+   "6": 3,
+   "7": 2,
+   "8": 3
+  },
+  "cultures_with_ge5_divs_per_batch": {
+   "1": 5,
+   "2": 6,
+   "3": 6,
+   "4": 2,
+   "5": 3,
+   "6": 3,
+   "7": 2,
+   "8": 3
+  },
+  "div_range": [
+   3,
+   39
+  ],
+  "recordings": 527,
+  "seven_day_pairs_per_culture": {
+   "cultures_with_ge3": 30,
+   "median": 13.5,
+   "min": 6
+  }
+ }
+}

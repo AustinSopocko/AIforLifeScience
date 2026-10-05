@@ -19,7 +19,8 @@ cfgs = glob.glob("configs/**/*.yaml", recursive=True) + ["protocol/prereg.yaml",
 for f in cfgs:
     yaml.safe_load(open(f))
 arts = yaml.safe_load(open("artefacts.yaml"))["artefacts"]
-missing = [a["path"] for a in arts if a["status"] == "DONE" and not glob.glob(a["path"].split(" ")[0])]
+check = lambda a: a.get("tracked") or profile != "smoke"
+missing = [a["path"] for a in arts if a["status"] == "DONE" and check(a) and not glob.glob(a["path"].split(" ")[0])]
 todo = sum(a["status"] == "TODO" for a in arts)
 print(f"reproduce.sh profile={profile}: {len(mods)} modules import, {len(cfgs)} YAML files parse")
 print("ARTEFACT MANIFEST")

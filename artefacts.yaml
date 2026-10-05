@@ -1,11 +1,12 @@
 # Manifest of every artefact the finished pipeline emits. reproduce.sh prints it.
 # status: TODO (not built) | DONE (reproduce.sh fails if a DONE path is missing).
+# tracked: true = committed to git (checked on every profile); false = regenerated from data (checked unless --profile smoke).
 # Rule: nothing enters the report that is not listed here and emitted by reproduce.sh.
 artefacts:
-  - {wi: WI-00, path: data/manifests/nfa.sha256,                 status: TODO, what: "sha256 manifest, NFA 2018"}
-  - {wi: WI-00, path: data/manifests/potter.sha256,              status: TODO, what: "sha256 manifest, Wagenaar dense"}
-  - {wi: WI-00, path: data/manifests/kapucu_rat.sha256,          status: TODO, what: "sha256 manifest, Kapucu rat CSVs"}
-  - {wi: WI-00, path: recon/inventory.json,                      status: TODO, what: "scripted re-derivation of PLAN §2.3/§3 counts + K1-K3"}
+  - {wi: WI-00, path: data/manifests/nfa.sha256,                 status: DONE, tracked: true, what: "sha256 manifest, NFA 2018"}
+  - {wi: WI-00, path: data/manifests/potter.sha256,              status: DONE, tracked: true, what: "sha256 manifest, Wagenaar dense"}
+  - {wi: WI-00, path: data/manifests/kapucu_rat.sha256,          status: DONE, tracked: true, what: "sha256 manifest, Kapucu rat CSVs"}
+  - {wi: WI-00, path: recon/inventory.json,                      status: DONE, tracked: true, what: "scripted re-derivation of PLAN §2.3/§3 counts + K1-K3"}
   - {wi: WI-02, path: ledger/results.jsonl,                      status: TODO, what: "every run appended + `ledger verify` passes (rows 1-2 exist; verifier not built)"}
   - {wi: WI-03, path: data/processed/recording_index.parquet,    status: TODO, what: "RecordingIndex, all corpora"}
   - {wi: WI-03, path: splits/potter_cv4.json,                    status: TODO, what: "Wagenaar 4-fold batch cross-fit manifest"}
