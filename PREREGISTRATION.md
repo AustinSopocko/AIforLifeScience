@@ -71,7 +71,8 @@
   - The detector is fixed (`configs/features/potter_handcrafted.yaml`).
   - Alternative target if K3 fires: log mean firing rate at t′.
 - **Labelled unit:** well. The pool is the training preps' wells (24).
-  - k ∈ {1, 2, 4, 8, 16, all}. 30 draws per k. BL-A2 gets 5 seeds per draw.
+  - k ∈ {1, 2, 4, 8, 16, all}. 30 draws per k (1 at k=all) for ours, BL-A0, BL-A1, BL-A3. BL-A2 (from scratch)
+    uses draws 30/20/30/6/3/1 at k = 1/2/4/8/16/all with 5 seeds per draw (G1 taper + G2).
 - **Pairs:** training uses all pairs of labelled wells. Evaluation uses the held-out prep's pairs
   with t ∈ {21, 24}.
 - **Methods** (all receive DIV t):
@@ -136,6 +137,12 @@
   - REFUTES → "batch identity is decodable; biology and artefact cannot be separated on this
     corpus".
   - INCONCLUSIVE → "underpowered".
+
+## 3b. Compute plan (fixed by the G-time gate, budget 8 h)
+
+Encoder: 400 ms bins, 120 s windows, channels [8, 16, 16], kernel 5, dilations 1/4/16, z ∈ ℝ³², 40 epochs, 1 member
+(shrink-ladder steps 1–2; cut 4). C2 canary retrains use 1 member (cut 2). Projected 6.23 h. Machine-readable:
+`protocol/prereg.yaml` `compute_plan`.
 
 ## 4. Baselines (all mandatory, all ledgered)
 
