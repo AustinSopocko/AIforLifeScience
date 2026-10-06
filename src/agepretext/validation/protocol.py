@@ -36,10 +36,18 @@ class SealRecord:
     components: dict
 
 
+def _strkeys(o):
+    if isinstance(o, dict):
+        return {str(k): _strkeys(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_strkeys(v) for v in o]
+    return o
+
+
 def _canonical(path: str) -> bytes:
     raw = open(path, "rb").read()
     if path.endswith((".yaml", ".yml")):
-        return json.dumps(yaml.safe_load(raw), sort_keys=True, separators=(",", ":"), default=str).encode()
+        return json.dumps(_strkeys(yaml.safe_load(raw)), sort_keys=True, separators=(",", ":"), default=str).encode()
     if path.endswith(".json"):
         return json.dumps(json.loads(raw), sort_keys=True, separators=(",", ":")).encode()
     return raw.replace(b"\r\n", b"\n")
