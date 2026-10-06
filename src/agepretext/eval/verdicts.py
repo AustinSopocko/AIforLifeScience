@@ -27,7 +27,24 @@ class Verdict:
 
 
 def verdict(hypothesis_id: str, results: dict, prereg: dict) -> Verdict:
-    raise NotImplementedError("WI-04")
+    """Implemented so far: the relative rule (H-AGE-P/N style). results = {"claim": BootstrapResult,
+    "baselines": {id: point}}; direction from prereg hypothesis metric."""
+    h = prereg["hypotheses"][hypothesis_id]
+    gating = h["gating_baselines"]
+    missing = [b for b in gating if b not in results["baselines"]]
+    if missing:
+        raise KeyError(f"missing gating baselines {missing}")
+    c = results["claim"]
+    if h["metric"]["direction"] == "lower":
+        best = min(results["baselines"][b] for b in gating)
+        ok = c.upper < best
+        pts = ", ".join(f"{b}={results['baselines'][b]:.4f}" for b in gating)
+        reason = f"UB(claim)={c.upper:.4f} vs min baseline point={best:.4f} ({pts})"
+    else:
+        best = max(results["baselines"][b] for b in gating)
+        ok = c.lower > best
+        reason = f"LB(claim)={c.lower:.4f} vs max baseline point={best:.4f}"
+    return Verdict("SUPPORTS" if ok else "REFUTES", not ok, [reason])
 
 
 def claim_status(verdicts: dict, prereg: dict) -> dict:

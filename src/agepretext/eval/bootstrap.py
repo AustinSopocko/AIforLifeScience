@@ -28,8 +28,21 @@ class BootstrapResult:
 
 
 def cluster_bootstrap(df, statistic, *, cluster_col: str, n_resamples: int = 4000,
-                      ci: float = 0.95, seed: int = 0) -> BootstrapResult:
-    raise NotImplementedError("WI-04")
+                      ci: float = 0.95, seed: int = 0, min_clusters: int = 5) -> BootstrapResult:
+    import numpy as np
+    import pandas as pd
+    groups = {k: g for k, g in df.groupby(cluster_col)}
+    keys = sorted(groups)
+    if len(keys) < min_clusters:
+        raise TooFewClusters(f"{len(keys)} clusters < {min_clusters}")
+    rng = np.random.default_rng(seed)
+    stats = []
+    for _ in range(n_resamples):
+        pick = rng.integers(0, len(keys), len(keys))
+        stats.append(statistic(pd.concat([groups[keys[i]] for i in pick], ignore_index=True)))
+    a = (1 - ci) / 2
+    return BootstrapResult(float(statistic(df)), float(np.quantile(stats, a)), float(np.quantile(stats, 1 - a)),
+                           len(keys), n_resamples)
 
 
 def paired_cluster_bootstrap(df, stat_a, stat_b, *, cluster_col: str, n_resamples: int = 4000,
