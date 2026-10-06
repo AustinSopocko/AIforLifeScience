@@ -40,7 +40,7 @@ fall, nothing is rewritten.
 | 5.2 | Application A: cross-lab few-shot transfer; full curve; worst-fold rule (or the D17 choice) | 1.5 | Verdict-switched | F6 |
 | 5.3 | Application B: age-residual readout; calibration; detection vs BL-B1/B2; sensitivity; C1 dependency | 2 | Verdict-switched | F7, F8 |
 | 6 | **What the protocol caught**: ledger summary (all runs, all verdicts), canary results, any lockbox reopening, cut-order decisions. Grows in prominence as claims fall; never empty. | 1 | Content from the ledger; text fixed | F3 ledger timeline |
-| 7 | Limitations and the sponsor precondition: biology vs artefact in batch identity; 3-prep inference for A; feature-only NFA; rat-only core; column-2 confound; zero tuning by design | 1.5 | No | — |
+| 7 | Limitations and the sponsor precondition: **temporal resolution (400 ms bins, ~34 s receptive field: burst-scale dynamics only, sub-200 ms timing discarded; compute-driven, fixed by the pre-declared G-time ladder before any fit — one paragraph, main text)**; biology vs artefact in batch identity; 3-prep inference for A; feature-only NFA; rat-only core; column-2 confound; NTP compound overlap (deviation 3); zero tuning by design | 1.5 | No | — |
 | 8 | Reproducibility: one command, runtime, hardware, verifying the ledger | 0.5 | No | — |
 | — | References; appendix (full ledger table, amendments, demoted figures per case) | 1–2 | Figure list by case | per §6b |
 

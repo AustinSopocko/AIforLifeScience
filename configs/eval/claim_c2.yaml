@@ -7,4 +7,4 @@ representation: final_encoder_all_batches
 reported: [handcrafted]
 permutations: {n: 1000, level: culture}
 canary: {artefact: batch_specific_noisy_electrodes, electrode_fraction: 0.10, added_rate: corpus_median_electrode_rate_per_div_bin,
-         inject_into: training_data, retrain: true, seeds: 10, alpha: 0.05, required_power: 0.8}
+         inject_into: training_data, retrain: true, retrain_members: 1, seeds: 20, alpha: 0.05, required_power: 0.8}

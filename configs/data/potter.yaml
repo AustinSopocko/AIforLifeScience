@@ -9,6 +9,6 @@ file_pattern: "{batch}-{culture}-{div}.spk.txt.bz2"   # rows: "<time_s> <channel
 verified: {dense_cultures: 30, dense_recordings: 527, div_range: [3, 39],
            cultures_per_batch: {1: 5, 2: 6, 3: 6, 4: 2, 5: 3, 6: 3, 7: 2, 8: 3}}
 hierarchy: {prep: batch, plate: culture, well: culture, timepoint: div}
-electrodes: 59               # TBD_WI00: confirm from data (MCS 60 minus reference)
+electrodes: 59               # observed: channel IDs 0-59, at most 59 distinct per recording (MCS 60 minus reference)
 redistribution: cite_only_download_at_runtime
 qc: {min_duration_s: 600, max_spike_time_s: 3600}   # WI-P1, pre-declared before any model: drop spikes with t > 3600 s (1 corrupt timestamp in 8-3-17); exclude recordings with < 5 full 120 s windows (6 of 527)

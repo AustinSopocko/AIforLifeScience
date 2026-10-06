@@ -2,8 +2,8 @@
 # eval/verdicts.py reads decision rules ONLY from this file. No absolute claim thresholds (D5):
 # every claim except C is decided by the relative rule below.
 schema_version: 3
-status: draft
-open_decisions: []          # D17 adopted (worst-fold); final grid below pending operator confirmation before Seal #1
+status: sealed              # Seal 1 (see protocol/seals/seal-1.json); changes only by dated amendment
+open_decisions: []          # all decisions adopted; operator-confirmed final grid
 
 decision_rule:
   name: relative_bound_vs_best_baseline_point
@@ -97,7 +97,7 @@ hypotheses:
       inject_into: training_data
       retrain: true
       retrain_members: 1          # cut 2: power check needs no ensemble
-      seeds: 10
+      seeds: 20                   # operator: matches C1
       detection_alpha: 0.05
       required_power: 0.8
     verdict: {rule: identity_rule}
@@ -130,11 +130,12 @@ compute_plan:          # final grid + model, fixed by the G-time gate (D8, budge
   shrink_ladder_applied: [1_bins_400ms, 2_channels_8_16_16]     # step 3 (epochs) not needed; step 4 (members 1) = cut 4
   grid_changes: [G1_taper_bl_a2, G2_full_bl_a2_at_k4_and_all, cut2_canary_members_1, cut4_wagenaar_members_1]
   not_applied: [cut3_draws_seeds]
-  g_time: {per_window_ms_train_conservative: 7.8, projected_hours: 6.23, limit_hours: 8, evidence: artifacts/g_time_ladder.json}
+  g_time: {per_window_ms_train_conservative: 7.8, projected_hours: 7.19, limit_hours: 8, evidence: [artifacts/g_time_ladder.json, artifacts/g_time_final.json]}   # incl. C2 canary x20
+  limitation: "400 ms bins: ~34 s receptive field; resolves network-burst-scale dynamics, discards sub-200 ms spike timing. Compute-driven, fixed by G-time before any fit."
 
 baselines:
   BL-0:  {type: predict_train_mean}
-  BL-1:  {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate]}
+  BL-1:  {type: ridge, inputs: [log1p_mean_firing_rate, log1p_network_burst_rate], alpha: 1.0, standardise: train_fold}
   BL-A0: {type: ridge, inputs: [div]}
   BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
   BL-A2: {type: same_arch_from_scratch, epochs: 40}

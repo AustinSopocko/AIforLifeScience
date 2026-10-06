@@ -1,6 +1,6 @@
 # Mirrors protocol/prereg.yaml `baselines`. prereg.yaml is authoritative.
 BL-0:  {type: predict_train_mean}
-BL-1:  {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate]}
+BL-1:  {type: ridge, inputs: [log1p_mean_firing_rate, log1p_network_burst_rate], alpha: 1.0, standardise: train_fold}
 BL-A0: {type: ridge, inputs: [div]}
 BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
 BL-A2: {type: same_arch_from_scratch, epochs: 40}

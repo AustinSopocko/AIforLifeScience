@@ -1,4 +1,4 @@
-# Preregistration: Age-Pretext Encoder (DRAFT v3, NOT SEALED)
+# Preregistration: Age-Pretext Encoder (v3, SEALED at Seal 1)
 
 > **Status: DRAFT.** Binding at **Seal #1** (WI-05).
 > - After sealing, changes are dated amendments with a new seal and a ledger row.
@@ -131,7 +131,7 @@
 - **Canary:**
   - In each batch, a seeded random 10% of electrodes get extra Poisson spikes at the corpus
     median per-electrode rate for the DIV bin.
-  - Injected into training data, and the encoder is retrained. 10 seeds.
+  - Injected into training data, and the encoder is retrained (1 member). 20 seeds, matching C1.
 - **Wording:**
   - SUPPORTS → "the encoder carries no decodable batch identity".
   - REFUTES → "batch identity is decodable; biology and artefact cannot be separated on this
@@ -141,8 +141,14 @@
 ## 3b. Compute plan (fixed by the G-time gate, budget 8 h)
 
 Encoder: 400 ms bins, 120 s windows, channels [8, 16, 16], kernel 5, dilations 1/4/16, z ∈ ℝ³², 40 epochs, 1 member
-(shrink-ladder steps 1–2; cut 4). C2 canary retrains use 1 member (cut 2). Projected 6.23 h. Machine-readable:
+(shrink-ladder steps 1–2; cut 4). C2 canary: 20 retrains, 1 member each (cut 2). Projected 7.19 h. Machine-readable:
 `protocol/prereg.yaml` `compute_plan`.
+
+**Limitation (temporal resolution).** The encoder bins spikes at 400 ms and, with dilations 1/4/16 at kernel 5, has
+a receptive field of about 34 s. It therefore resolves network-burst-scale dynamics (burst occurrence, inter-burst
+intervals, recruitment across electrodes) and discards sub-200 ms spike-timing structure (intra-burst timing,
+fine-scale synchrony). This was a compute-driven choice, fixed by the pre-declared G-time gate and shrink ladder
+before any model was fit. Any claim about the representation is a claim about burst-scale structure only.
 
 ## 4. Baselines (all mandatory, all ledgered)
 

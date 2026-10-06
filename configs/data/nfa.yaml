@@ -2,7 +2,7 @@
 name: nfa_2018
 base_url: https://pasteur.epa.gov/uploads/10.23719/1503191/
 files:
-  - {name: NTP_TC_Analysis.zip, bytes: 159560650, sha256: TBD_WI00}
+  - {name: NTP_TC_Analysis.zip, bytes: 159560650, sha256: fd92c1339bb764ee9b96c935bf31867c12640505e5c3f065ad5956a7eea08cfb}
 members:                      # only these archive members are read; DEPRECATED* folders are forbidden
   TC:  {features: "New TC/sourceData/AllCombined_ToxCast_20180923.csv", mi: "New TC/sourceData/AllCombined_ToxCast_MI_updated_20180923.csv",
         ab: "New TC/sourceData/Toxcast_AB_full_20180923.csv", ldh: "New TC/sourceData/Toxcast_LDH_full_20180923.csv"}
@@ -12,4 +12,4 @@ hierarchy: {prep: date, plate: Plate.SN, well: well, timepoint: DIV}
 control_rule: "dose == 0"
 electrodes_per_well: 16
 licence: EPA ScienceHub (verify text in WI-00)
-redistribution: TBD_WI00
+redistribution: runtime_download_only   # D10

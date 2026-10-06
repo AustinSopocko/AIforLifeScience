@@ -1,10 +1,17 @@
-# Pipeline P training. Fixed at Seal #1.
+# Pipeline P training. Fixed at Seal #1 (D2b: no tuning, no exceptions).
 optimizer: adamw
 lr: 1.0e-3
 weight_decay: 1.0e-3
-epochs: 40                 # fixed; no early stopping -> no tuning surface
+epochs: 40                       # fixed; no early stopping -> no tuning surface
 batch_size: 64
-crossfit: {folds: 4, unit: batch, batches_per_fold: 2}
-final_model: all_batches   # the only encoder used by Claim A (frozen transfer) and C2
+windows_per_recording_per_epoch: 2   # sampled uniformly without replacement from the recording's windows, each epoch
+target: log_div
+target_standardisation: train_fold   # z-score log DIV with train-fold mean/SD; predictions inverted before evaluation
+electrode_subsample: per_window_uniform_size_16_to_all   # training only; evaluation uses all electrodes
+recording_prediction: mean_over_all_windows             # also z = mean over windows
+members: 1                       # cut 4; with one member there is no bootstrap resampling of preps
+crossfit: {folds: 4, unit: batch, manifest: splits/potter_cv4.json}
+final_model: all_batches         # the only encoder used by Claim A (frozen transfer) and C2
 deterministic: true
-seed: 0
+seed: 0                          # fold f uses seed + f; final model uses seed + 100
+threads: 4
