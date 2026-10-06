@@ -14,11 +14,11 @@ artefacts:
   - {wi: WI-03, path: splits/nfa_dev_cv6.json,                   status: DONE, tracked: true, what: "NFA TC 6-fold manifest"}
   - {wi: WI-03, path: splits/nfa_lockbox.json,                   status: DONE, tracked: true, what: "NFA TC dev (12 preps) / NTP-only lockbox (5 preps; 20171011 shared -> dev)"}
   - {wi: G-time, path: artifacts/g_time.json,                    status: DONE, tracked: false, what: "real-data timing, 4h projection, shrink steps applied"}
-  - {wi: WI-05, path: protocol/seals/seal-1.json,                status: TODO, what: "Seal 1"}
+  - {wi: WI-05, path: protocol/seals/seal-1.json,                status: DONE, tracked: true, what: "Seal 1"}
   - {wi: WI-P1, path: data/processed/potter_bins/,               status: DONE, tracked: false, what: "Wagenaar binned spike tensors"}
   - {wi: WI-P1, path: data/processed/potter_handcrafted.parquet, status: DONE, tracked: false, what: "mean firing rate + network-burst rate"}
-  - {wi: WI-P2, path: artifacts/potter/oof.parquet,              status: TODO, what: "out-of-fold age predictions + z"}
-  - {wi: WI-P2, path: artifacts/potter/final_encoder/,           status: TODO, what: "final age-pretext encoder (all 8 batches)"}
+  - {wi: WI-P2, path: artifacts/potter/oof.parquet,              status: DONE, tracked: false, what: "out-of-fold age predictions + z"}
+  - {wi: WI-P2, path: artifacts/potter/final_encoder/,           status: DONE, tracked: false, what: "final age-pretext encoder (all 8 batches)"}
   - {wi: WI-P3, path: artifacts/potter/h_age_p.json,             status: TODO, what: "H-AGE-P result + verdict"}
   - {wi: WI-P4, path: artifacts/potter/claim_c2/,                status: TODO, what: "C2 batch probe + 10 canaries + verdict"}
   - {wi: WI-K1, path: data/processed/kapucu_rat_bins/,           status: TODO, what: "Kapucu rat binned tensors"}
