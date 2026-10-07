@@ -103,3 +103,9 @@ def test_prereg_v5_ready_for_seal_2():
         f = idx[idx.source == "fragilex"]
         assert sorted(f[f.genotype == "wt"].cluster_id.unique()) == fx["wt"]
         assert sorted(f[f.genotype == "fmr1_ko"].cluster_id.unique()) == fx["ko"]
+
+
+def test_f2_selection_copied_into_prereg():
+    pre = yaml.safe_load(open("protocol/prereg.yaml"))["features"]["selected"]
+    cfg = yaml.safe_load(open("configs/features/burst_calibration.yaml"))["selected"]
+    assert pre == cfg and cfg["multiwell_64"] == cfg["mcs_8x8"]

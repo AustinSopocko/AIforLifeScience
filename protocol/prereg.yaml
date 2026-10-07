@@ -43,6 +43,10 @@ features:                          # F2 (configs/features/burst_calibration.yaml
   bl1_detector: per_platform_calibrated_on_dev
   platforms: {mcs_8x8: [potter, g2chvc, fragilex], axion_48w_16: [epameadev, epa_mi], multiwell_64: [kapucu_rat]}
   multiwell_64: "takes mcs_8x8 parameters (no dev data on this platform; nearest electrode count)"
+  selected:     # copy of burst_calibration.yaml `selected` (round 1 + declared extension round; ledger rows 28-30)
+    mcs_8x8:      {bin_ms: 100, median_mult: 1.5, active_frac: 0.25, min_rate_hz: 0.0}
+    axion_48w_16: {bin_ms: 400, median_mult: 6, active_frac: 0.05, min_rate_hz: 0.0}
+    multiwell_64: {bin_ms: 100, median_mult: 1.5, active_frac: 0.25, min_rate_hz: 0.0}
 
 statistics:
   bootstrap: {method: cluster_percentile, n_resamples: 4000, ci: 0.95, seed: 20261005, min_clusters: 5}

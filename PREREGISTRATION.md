@@ -89,12 +89,26 @@ results in `research/f2_burst_calibration.json`).
 - **Selection criterion:** BL-1's own 4-fold group-by-cluster out-of-fold age MAE. This is deliberately
   baseline-favouring: it includes the lab that a LOLO fold later holds out.
 
-| Platform | Dev data | Applies to | bin (ms) | median × | active fraction | min rate (Hz) |
-|---|---|---|---|---|---|---|
-| mcs_8x8 (59/60 electrodes) | Potter + Charlesworth | Potter, Charlesworth, **Fragile-X** | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ |
-| axion_48w_16 (16 per well) | EPAmeadev + EPA-MI | EPA | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ |
-| multiwell_64 | none | Kapucu | = mcs_8x8 (nearest electrode count) | | | |
-| Seal 1 default | — | — | 100 | 4 | 0.25 | 0.1 |
+| Platform | Dev data | Applies to | Bin (ms) | Median × | Active fraction | Min rate (Hz) | BL-1 dev error (log-DIV) |
+|---|---|---|---|---|---|---|---|
+| mcs_8x8 (59/60 electrodes) | Potter + Charlesworth (1,045 recordings, 30 clusters) | Potter, Charlesworth, **Fragile-X** | 100 | 1.5 | 0.25 | 0 | 0.2991 |
+| axion_48w_16 (16 per well) | EPAmeadev + EPA-MI (5,328 well recordings, 16 clusters) | EPA | 400 | 6 | 0.05 | 0 | 0.3709 |
+| multiwell_64 | none | Kapucu | = mcs_8x8 (nearest electrode count) | | | | |
+| Seal 1 default | — | — | 100 | 4 | 0.25 | 0.1 | mcs 0.3062 / axion 0.4272 |
+
+**How the search ran.**
+- **Round 1:** 108 settings per platform. Both winners sat on grid edges (ledger row 29).
+- **Round 2:** one extension round, declared before it ran: 12 MCS settings and 48 Axion settings. The final selection is
+  the best over both rounds.
+
+**What remains at a grid edge.**
+- A minimum rate of 0 Hz is the floor: every electrode with at least one spike counts as active.
+- On Axion, the 400 ms bin and the 0.05 active fraction are still at the edge of the extended grid. The declared
+  one-round rule ends the search, so BL-1 on Axion may still be slightly below its best.
+- The Axion choice works as a population-rate burst detector on 16-electrode wells.
+
+**Effect.** The selected errors are optimistic, because each was chosen on the same cross-validation that scores it.
+That optimism favours the baseline, which is the intended direction.
 
 ## 5. Decision rule (paired)
 
