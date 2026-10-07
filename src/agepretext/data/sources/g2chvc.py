@@ -34,7 +34,7 @@ def recordings(cfg: dict, root: str) -> list[dict]:
             prep, age, reg, gen = g("meta/DIV0"), int(g("meta/age")), g("meta/region"), g("meta/genotype")
         stem = re.sub(r"[-_]DIV\d+", "", b[:-3]).replace("-preSham", "")
         out.append(dict(prep_id=prep, plate_id=stem, well_id=stem, div=age, region=cfg["regions"][reg], genotype=gen,
-                        duration_s=float(rt[1] - rt[0]), payload=os.path.relpath(f, root)))
+                        duration_source="stored", duration_s=float(rt[1] - rt[0]), payload=os.path.relpath(f, root)))
     recordings.excluded = excl
     return out
 

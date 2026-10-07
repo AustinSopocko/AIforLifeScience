@@ -36,7 +36,7 @@ def recordings(cfg: dict, root: str) -> list[dict]:
         plate = f"{prep}_{mw}"
         for w in _wells(cfg):
             out.append(dict(prep_id=prep, plate_id=plate, well_id=f"{plate}:{w}", div=div, plate_kind=kind,
-                            duration_s=dur, row=w[0], col=int(w[1:]), payload=f"{os.path.relpath(f, root)}#{w}"))
+                            duration_source="last_spike", duration_s=dur, row=w[0], col=int(w[1:]), payload=f"{os.path.relpath(f, root)}#{w}"))
     return out
 
 

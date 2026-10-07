@@ -4,8 +4,9 @@ potter_cv4:      {source: potter, unit: prep, purpose: pretext_crossfit, n_folds
 kapucu_rat_lopo: {source: kapucu_rat, unit: prep, purpose: fewshot, n_folds: 3}
 nfa_dev_cv6:     {source: nfa, subset: TC, unit: prep, purpose: pretext_crossfit, n_folds: 6}
 nfa_lockbox:     {source: nfa, unit: prep, purpose: lockbox, dev_subset: TC, lockbox_subset: NTP}
-# Phase 2 (D19). Pooled unit = cluster_id "<lab>:<prep>". Confirmatory = every NFA prep + Kapucu rat (one run, Seal 2).
-dev_confirmatory: {unit: cluster, purpose: dev_confirmatory, dev_sources: [potter, epameadev, epa_mi, g2chvc, fragilex],
-                   confirmatory_sources: [nfa, kapucu_rat]}
-dev_lolo:         {unit: cluster, purpose: leave_one_lab_out, dev_sources: [potter, epameadev, epa_mi, g2chvc, fragilex],
-                   confirmatory_sources: [nfa, kapucu_rat]}
+# Phase 2 (D19, D21 option b). Pooled unit = cluster_id "<lab>:<prep>". Confirmatory = Fragile-X + Kapucu rat + every
+# NFA prep (one run). Fragile-X moved from dev to confirmatory by D21 before any Phase 3 fit.
+dev_confirmatory: {unit: cluster, purpose: dev_confirmatory, dev_sources: [potter, epameadev, epa_mi, g2chvc],
+                   confirmatory_sources: [fragilex, kapucu_rat, nfa]}
+dev_lolo:         {unit: cluster, purpose: leave_one_lab_out, dev_sources: [potter, epameadev, epa_mi, g2chvc],
+                   confirmatory_sources: [fragilex, kapucu_rat, nfa]}

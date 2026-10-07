@@ -26,7 +26,7 @@ def recordings(cfg: dict, root: str) -> list[dict]:
         sess, gen, mea, div, ts = PAT.search(os.path.basename(f)).groups()
         t, _ = read_spikes(f)
         out.append(dict(prep_id=f"CS{sess}", plate_id=f"CS{sess}_{mea}", well_id=f"CS{sess}_{mea}", div=int(div), genotype=cfg["genotype"][gen.upper()],
-                        timestamp=ts, duration_s=float(t.max()) if t.size else 0.0, payload=os.path.relpath(f, root)))
+                        timestamp=ts, duration_source="last_spike", duration_s=float(t.max()) if t.size else 0.0, payload=os.path.relpath(f, root)))
     return out
 
 

@@ -1,0 +1,11 @@
+# Phase 2 length QC (F1, replaces the Seal-1 last-spike rule for every Phase 2 run). Implemented in data/qc.py.
+min_duration_s: 600
+window_s: 120
+rule:
+  stored: "exclude iff recorded length < 600 s"
+  last_spike: "never excluded for length (silence is age information); windows = max(1, floor(last_spike / 120))"
+  deferred: "Kapucu: same rule, applied in the confirmatory run (stored length if its expLog records one)"
+duration_sources: {potter: last_spike, epameadev: last_spike, fragilex: last_spike, epa_mi: stored, g2chvc: stored,
+                   nfa: none, kapucu_rat: deferred}
+sensitivity_reported: "Seal-1 rule (drop last_spike recordings with last spike < 600 s), reported next to every dev result, not gating"
+potter_max_spike_time_s: 3600   # Seal-1 corrupt-timestamp cap, unchanged

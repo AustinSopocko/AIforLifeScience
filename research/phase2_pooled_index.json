@@ -1,6 +1,6 @@
 {
- "index_sha256": "3c9af42f673976e13e7b791e01d674e3d66a99a8814f55700d9844b8d053510a",
- "dev_confirmatory_sha256": "077001ae6d9eef2f94e4584970516421e2b9643794ed7d6c97e71f4e97c67db8",
+ "index_sha256": "89692d0ce0c5ff3d713c155c0e5fbf2ed87cb725caddec3dd2e2b58b9963ee03",
+ "dev_confirmatory_sha256": "77c1f4939e57edd9edcff329c58cdb0199e16f7846a8887256177e644f8fe0bd",
  "overlap_stratum_div": [
   7,
   12
@@ -71,7 +71,7 @@
    "preps": 16,
    "plates": 20,
    "recordings": 5328,
-   "recordings_qc": 5040,
+   "recordings_qc": 5328,
    "qc_measured": true,
    "div_min": 2,
    "div_max": 37,
@@ -89,6 +89,7 @@
     21,
     23,
     26,
+    27,
     28,
     30,
     33,
@@ -97,45 +98,6 @@
    ],
    "preps_with_div_7_12": 16,
    "recordings_div_7_12": 2400
-  },
-  {
-   "role": "dev",
-   "lab": "giugliano",
-   "sources": [
-    "fragilex"
-   ],
-   "species": [
-    "mouse"
-   ],
-   "regions": [
-    "cortex"
-   ],
-   "genotypes": [
-    "fmr1_ko",
-    "wt"
-   ],
-   "preps": 10,
-   "plates": 57,
-   "recordings": 264,
-   "recordings_qc": 264,
-   "qc_measured": true,
-   "div_min": 7,
-   "div_max": 35,
-   "div_values": [
-    7,
-    9,
-    11,
-    13,
-    14,
-    16,
-    21,
-    22,
-    24,
-    28,
-    35
-   ],
-   "preps_with_div_7_12": 10,
-   "recordings_div_7_12": 96
   },
   {
    "role": "dev",
@@ -155,7 +117,7 @@
    "preps": 8,
    "plates": 30,
    "recordings": 527,
-   "recordings_qc": 521,
+   "recordings_qc": 527,
    "qc_measured": true,
    "div_min": 3,
    "div_max": 39,
@@ -196,7 +158,7 @@
     39
    ],
    "preps_with_div_7_12": 8,
-   "recordings_div_7_12": 118
+   "recordings_div_7_12": 119
   },
   {
    "role": "confirmatory",
@@ -228,6 +190,77 @@
    ],
    "preps_with_div_7_12": 17,
    "recordings_div_7_12": 1607
+  },
+  {
+   "role": "confirmatory",
+   "lab": "giugliano_fmr1_ko",
+   "sources": [
+    "fragilex"
+   ],
+   "species": [
+    "mouse"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "fmr1_ko"
+   ],
+   "preps": 5,
+   "plates": 33,
+   "recordings": 125,
+   "recordings_qc": 125,
+   "qc_measured": true,
+   "div_min": 7,
+   "div_max": 35,
+   "div_values": [
+    7,
+    9,
+    14,
+    21,
+    22,
+    24,
+    28,
+    35
+   ],
+   "preps_with_div_7_12": 5,
+   "recordings_div_7_12": 51
+  },
+  {
+   "role": "confirmatory",
+   "lab": "giugliano_wt",
+   "sources": [
+    "fragilex"
+   ],
+   "species": [
+    "mouse"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 5,
+   "plates": 24,
+   "recordings": 139,
+   "recordings_qc": 139,
+   "qc_measured": true,
+   "div_min": 7,
+   "div_max": 35,
+   "div_values": [
+    7,
+    9,
+    11,
+    13,
+    14,
+    16,
+    21,
+    28,
+    35
+   ],
+   "preps_with_div_7_12": 5,
+   "recordings_div_7_12": 45
   },
   {
    "role": "confirmatory",

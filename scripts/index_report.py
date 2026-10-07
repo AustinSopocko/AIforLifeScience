@@ -1,8 +1,10 @@
 """Phase 2: pooled RecordingIndex summary per lab and role -> research/phase2_pooled_index.json (+ printed table).
-Metadata only (counts, DIV values, recording length); no activity values. QC = duration_s >= 600 (Seal 1 rule)."""
+Metadata only (counts, DIV values, recording length); no activity values. QC = data.qc.length_qc (F1).
+Fragile-X rows are split by genotype (WT = H-AGE-FX, KO = H-B2)."""
 import json
 import pandas as pd
 from agepretext.data.index import RecordingIndex
+from agepretext.data.qc import length_qc
 from agepretext.data.splits import SplitManifest
 
 idx = RecordingIndex.load(); t = idx.table.copy()
@@ -10,10 +12,11 @@ dc = SplitManifest.from_json("splits/dev_confirmatory.json", idx)
 role = {c: r for r, cs in dc.partitions.items() for c in cs}
 t["role"] = t.cluster_id.map(role)
 t = t[t.is_control]                                   # treated NFA wells are Claim-B material, not age-pretext data
-t["qc_ok"] = t.duration_s.isna() | (t.duration_s >= 600)
+t["qc_ok"] = [length_qc(a, b)[0] for a, b in zip(t.duration_s, t.duration_source)]
+t["group"] = t.lab.where(t.source != "fragilex", t.lab + "_" + t.genotype)
 OV = (7, 12)
 out = []
-for (r, lab), g in t.groupby(["role", "lab"], sort=False):
+for (r, lab), g in t.groupby(["role", "group"], sort=False):
     q = g[g.qc_ok]
     ov = q[q["div"].between(*OV)].groupby("cluster_id")["div"].nunique()
     out.append(dict(role=r, lab=lab, sources=sorted(g.source.unique()), species=sorted(g.species.unique()),

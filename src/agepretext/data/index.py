@@ -13,8 +13,11 @@ One row per recording with non-null hierarchy columns:
     row (str | None)  col (int | None)      # NFA / Kapucu plate layout
     inferential (bool)                      # False for Kapucu hPSC (PLAN §2.2)
     payload (str)                           # source-specific pointer (spike file or feature-table row)
-    duration_s (float | NaN)                # recording length; NaN for NFA (feature table) and Kapucu (confirmatory,
-                                            # not opened for this); QC (>= 600 s) is applied at binning, not here
+    platform (PLATFORMS[source])            # burst-detector calibration unit (F2)
+    duration_s (float | NaN)  duration_source ("stored" | "last_spike" | "none" | "deferred")
+        stored: the file records its length (g2chvc recordingtime, EPA-MI Analysis Duration); last_spike: no length is
+        recorded, so duration_s is the file's last spike time (a lower bound); none: NFA feature table; deferred: Kapucu
+        (confirmatory, length read only in the confirmatory run). Length QC is `data.qc.length_qc` (F1).
 Potter: prep = batch, plate = well = culture. Phase 2 (D19): two sources of one lab share a prep when the culture date
 coincides (EPAmeadev / EPA-MI), so `cluster_id`, not (source, prep_id), is the unit for pooled splits. `validate()` raises on nulls in hierarchy columns, duplicate
 recording_ids, a well under two preps/plates, or is_control != (dose_uM == 0).
@@ -30,6 +33,9 @@ HIER = ["recording_id", "source", "lab", "prep_id", "cluster_id", "plate_id", "w
 LABS = {"potter": "potter_gatech", "nfa": "epa_shafer", "epameadev": "epa_shafer", "epa_mi": "epa_shafer",
         "kapucu_rat": "kapucu_tuni", "g2chvc": "eglen_grant", "fragilex": "giugliano"}
 SPECIES = {"rat", "mouse", "human"}
+PLATFORMS = {"potter": "mcs_8x8", "g2chvc": "mcs_8x8", "fragilex": "mcs_8x8", "epameadev": "axion_48w_16",
+             "epa_mi": "axion_48w_16", "nfa": "axion_48w_16", "kapucu_rat": "multiwell_64"}
+DURATION_SOURCES = {"stored", "last_spike", "none", "deferred"}
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,10 @@ class RecordingIndex:
             raise ValueError("non-positive DIV")
         if (t.lab != t.source.map(LABS)).any() or (t.cluster_id != t.lab + ":" + t.prep_id).any():
             raise ValueError("lab / cluster_id inconsistent with source / prep_id")
+        if "platform" in t and (t.platform != t.source.map(PLATFORMS)).any():
+            raise ValueError("platform inconsistent with source")
+        if "duration_source" in t and not set(t.duration_source) <= DURATION_SOURCES:
+            raise ValueError(f"unknown duration_source {set(t.duration_source) - DURATION_SOURCES}")
         if not set(t.species) <= SPECIES:
             raise ValueError(f"unknown species {set(t.species) - SPECIES}")
         g = t.groupby(["lab", "well_id", "plate_id"]).prep_id.nunique()

@@ -118,7 +118,8 @@ BUNDLE_GLOBS = {
     "epameadev": ["repo/allH5Files/*.h5"],
     "g2chvc": ["repo/inst/extdata/*.h5"],
     "fragilex": ["MEA_experiments.zip", "readme.txt", "extracted/MEA_experiments/*/CultureSession*/MEA_*/*_spikes.mat"],
-    "epa_mi": ["Mutual Information Data and Scripts.zip", "spikelists/*/*_spike_list.csv"],
+    "epa_mi": ["Mutual Information Data and Scripts.zip", "spikelists/*/*_spike_list.csv",
+               "spikelists/*/*_Neural Statistics Compiler(*).csv"],
 }
 
 
