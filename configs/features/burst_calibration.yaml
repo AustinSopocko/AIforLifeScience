@@ -18,4 +18,9 @@ objective:
   metric: cluster_weighted_mae            # prereg statistics.error_weighting
   recordings: "dev, F1 length QC (data/qc.py), analysed span = n_windows x 120 s"
   tie_break: "lowest MAE; exact ties -> earlier grid order"
-selected: null                            # written by scripts/calibrate_bursts.py; frozen at Seal 2
+extension_round:                          # declared after round 1 selected grid-edge values on both platforms (ledger row 29)
+  rule: "one round only: extend each axis whose round-1 selection sat on a grid edge one or two steps outward; final selection = best over rounds 1 + 2"
+  grids:
+    mcs_8x8:      {bin_ms: [100], median_mult: [1, 1.5, 2], active_frac: [0.25], min_rate_hz: [0.0, 0.005, 0.01, 0.02]}
+    axion_48w_16: {bin_ms: [200, 400], median_mult: [6, 8, 12], active_frac: [0.05, 0.1], min_rate_hz: [0.0, 0.005, 0.01, 0.02]}
+round1_selected: {axion_48w_16: {active_frac: 0.1, bin_ms: 200, median_mult: 6, min_rate_hz: 0.02}, mcs_8x8: {active_frac: 0.25, bin_ms: 100, median_mult: 2, min_rate_hz: 0.02}, multiwell_64: {active_frac: 0.25, bin_ms: 100, median_mult: 2, min_rate_hz: 0.02}}                            # written by scripts/calibrate_bursts.py; frozen at Seal 2
