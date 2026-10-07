@@ -7,7 +7,8 @@ data/manifests/*.sha256. `frozen_hash()` = sha256 over sorted "<path>\\0<sha256(
 JSON are parsed and re-serialised as canonical JSON (sorted keys, compact) and text is LF-normalised. Code may evolve
 after a seal (stubs get implemented); every hyperparameter lives in the frozen files, so a code change cannot move one.
 Every run records the frozen hash AND its git commit.
-- `seal()` refuses on a dirty tree, any TBD_WI00 placeholder, or an invalid split manifest; writes
+- `seal()` refuses on a dirty tree, any TBD_WI00 / TBD_SEAL2 placeholder, non-empty prereg open_decisions, or an
+  invalid split manifest; writes
   protocol/seals/seal-N.json {seal_id, protocol_hash, prereg_sha256, git_commit, created_utc, components} and tags
   `seal-N-<hash8>`.
 - `matching_seal(hash)` returns the SealRecord with that protocol_hash, or None.
@@ -85,8 +86,11 @@ def seal(profile: str | None = None) -> SealRecord:
     require_clean_tree()
     comp = components()
     for p in comp:
-        if b"TBD_WI00" in open(p, "rb").read():
-            raise RuntimeError(f"placeholder TBD_WI00 in {p}")
+        for tok in (b"TBD_WI00", b"TBD_SEAL2"):
+            if tok in open(p, "rb").read():
+                raise RuntimeError(f"placeholder {tok.decode()} in {p}")
+    if yaml.safe_load(open("protocol/prereg.yaml")).get("open_decisions"):
+        raise RuntimeError("prereg has open_decisions")
     for p in glob.glob("splits/*.json"):
         SplitManifest.from_json(p)
     h = frozen_hash(comp)

@@ -1,4 +1,5 @@
-"""WI-P3 (under Seal 1, confirmatory): H-AGE-P. Out-of-fold MAE log-DIV of the encoder vs BL-0 and BL-1 on held-out
+"""[Seal-1 run: refuses at HEAD (protocol is v4); reproducible at commits 353cc113..fef0404, rules in protocol/archive/seal-1/.]
+WI-P3 (under Seal 1, confirmatory): H-AGE-P. Out-of-fold MAE log-DIV of the encoder vs BL-0 and BL-1 on held-out
 Wagenaar batches (splits/potter_cv4.json); batch-clustered percentile bootstrap (headline), culture-clustered
 (sensitivity); per-DIV-bin MAE (reported). Verdict by the relative rule from prereg.yaml. Appends ledger rows."""
 import hashlib, os

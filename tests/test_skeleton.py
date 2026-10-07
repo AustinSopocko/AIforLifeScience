@@ -35,10 +35,14 @@ def test_yaml_documents_parse():
 
 
 def test_prereg_has_no_absolute_claim_thresholds():
-    """D5: every non-C hypothesis is decided by the relative rule against named gating baselines."""
+    """D5: every non-identity hypothesis is decided by the decision rule against named gating baselines (v3 relative,
+    v4 paired). TBD_SEAL2 placeholders are allowed in a draft; seal() refuses them."""
     pre = yaml.safe_load((ROOT / "protocol/prereg.yaml").read_text())
     for hid, h in pre["hypotheses"].items():
-        if hid in ("H-C1", "H-C2"):
+        if h == "TBD_SEAL2":
+            assert pre["status"] == "draft"
+            continue
+        if h.get("verdict", {}).get("rule") == "identity_rule":
             assert h["verdict"]["rule"] == "identity_rule" and "canary" in h
             continue
         assert h.get("gating_baselines"), f"{hid} has no gating baselines"
@@ -69,9 +73,9 @@ def test_workitem_deps_exist_and_acyclic():
 
 
 def test_case_table_covers_all_eight_outcomes():
-    """D16: every combination of A/B/C holds|falls maps to exactly one pre-declared case."""
+    """D16 (Seal 1, archived v3): every combination of A/B/C holds|falls maps to exactly one pre-declared case."""
     import itertools
-    pre = yaml.safe_load((ROOT / "protocol/prereg.yaml").read_text())
+    pre = yaml.safe_load((ROOT / "protocol/archive/seal-1/prereg.yaml").read_text())
     cases = {k: v for k, v in pre["case_number"].items() if k != "collapse_rule"}
     combos = {(v["A"], v["B"], v["C"]) for v in cases.values()}
     assert combos == set(itertools.product(["holds", "falls"], repeat=3))

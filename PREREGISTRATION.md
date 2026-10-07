@@ -1,182 +1,192 @@
-# Preregistration: Age-Pretext Encoder (v3, SEALED at Seal 1)
+# Preregistration: Age-Pretext Encoder (v4, Phase 2 research protocol)
 
-> **Status: DRAFT.** Binding at **Seal #1** (WI-05).
-> - After sealing, changes are dated amendments with a new seal and a ledger row.
-> - The machine-readable twin is `protocol/prereg.yaml`. If prose and YAML disagree, the YAML
->   wins and the disagreement is a bug.
-> - **Open before sealing:** D17 (Claim A inference rule with 3 preps), marked ⟨D17⟩.
+> **Status: DRAFT.** It becomes binding at **Seal 2**, when the architecture is frozen on dev.
+> - The machine-readable twin is `protocol/prereg.yaml`. If this prose and the YAML disagree, the YAML wins and the
+>   disagreement is a bug.
+> - **Seal 2 is blocked** while `open_decisions` is non-empty (D21, §8) or any `TBD_SEAL2` remains (the Phase 4
+>   battery).
+> - v3 (sealed at Seal 1) is archived by content in `protocol/archive/seal-1/`. Every Seal 1 component still hashes to
+>   `protocol/seals/seal-1.json`.
 
-## 0. Scope and units
+## 0. Provenance
 
-| | Wagenaar/Potter (encoder) | Kapucu rat (transfer target) | EPA NFA (readout) |
-|---|---|---|---|
-| Hypotheses | H-AGE-P, H-C2 | H-A | H-AGE-N, H-B, H-C1 |
-| Input | binned spikes (200 ms, 120 s windows) | same bins, **frozen** encoder | 17 endpoints + MI |
-| Model | electrode-set encoder, cluster-bagged M = 3 | ridge heads on frozen z | ridge, cluster-bagged M = 5 |
-| Prep (cluster unit) | dissection batch (8) | culture-date token (3: `190617`, `250417`, `31017`) | culture date (18) |
-| Sensitivity unit | culture (30) | well (36) | plate (99) |
-| Splits | 4-fold cross-fit (H-AGE-P); final encoder on all 8 batches | leave-one-prep-out | TC 6-fold cross-fit; NTP lockbox (Seal #2) |
+**Seal 1's unpaired H-AGE-P result stands as reported and refuted** (UB 0.401 vs BL-1 point 0.360; ledger rows 16–18).
+**Phase 2 adopts the paired comparison PROSPECTIVELY, on dev.** The paired rule is never re-applied to the Seal 1
+result.
 
-- **Age target:** log(DIV). All MVR data is rat.
-- **Tuning:** none. Every hyperparameter is fixed at Seal #1, except the logged pre-seal
-  G-time shrink ladder.
-- **Intervals:** percentile cluster bootstrap over preps, B = 4,000, 95%. The
-  favourable-direction bound is the headline. Lower-level clustering is sensitivity only.
+The other Seal 1 hypotheses (H-AGE-N, H-A, H-B, H-C1, H-C2) were never run. They are withdrawn and superseded by this
+protocol; no data were touched for them.
 
-## 1. Invariants
+The spine is unchanged:
+- append-only hash-chained ledger;
+- sealed protocols;
+- canaries;
+- cluster bootstrap with the culture prep as the unit;
+- nulls and baselines declared before any fit.
 
-1. Splits are by prep. Transforms and parameters are fit on train preps only.
-2. NFA treated wells never enter age training.
-3. NTP is read only under Seal #2 on a clean tree, and every opening is ledgered.
-4. The encoder never sees Kapucu data during training.
-5. **Sanctioned identity-probe exceptions** (`SplitPurpose.IDENTITY_PROBE`, caller-restricted to
-   `eval/identity_probe.py`):
-   - C2: cultures split within batch.
-   - C1: wells split within plate.
+## 1. Data roles
 
-## 2. Decision rules
+`splits/dev_confirmatory.json` fixes the roles. The unit is `cluster_id = <lab>:<prep>`, where a prep is an independent
+dissection or plating date. EPAmeadev and EPA-MI share three culture dates (20140205, 20140212, 20140402). Each shared
+date is one cluster, not two.
 
-- **Relative rule (D5):** a hypothesis survives only if its favourable-direction
-  cluster-bootstrap bound beats the **point estimate** of the best gating baseline. Otherwise it
-  is REFUTES. If the bound cannot be computed, it is INCONCLUSIVE.
-- **Identity rule (C1, C2):**
-  - SUPPORTS iff canary power ≥ 0.8 **and** real-identity permutation p ≥ 0.05.
-  - REFUTES iff power ≥ 0.8 and p < 0.05.
-  - INCONCLUSIVE iff power < 0.8.
-- **Claim status:**
-  - A holds iff H-A SUPPORTS.
-  - B holds iff H-B SUPPORTS **and** H-C1 is not REFUTES.
-  - C holds iff H-C1 SUPPORTS.
-  - Anything else "falls". C2 sets C's wording only.
-- **Case number** (1–8, `PLAN.md` §6b) is computed from the claim statuses, including the
-  collapse rule.
+| Role | Lab | Sources | Species / region | Preps | DIV (after QC) |
+|---|---|---|---|---|---|
+| dev | potter_gatech | Wagenaar 2006 | rat cortex | 8 | 3–39 |
+| dev | epa_shafer | EPAmeadev + EPA-MI (controls only) | rat cortex | 16 | 2–37 (mostly 2–12) |
+| dev | eglen_grant | Charlesworth g2chvcdata (drug files excluded) | mouse hippocampus + cortex | 22 | 7–29 |
+| dev | giugliano | Fragile-X (WT + Fmr1-KO) | mouse cortex | 10 | 7–35 |
+| confirmatory | epa_shafer | NFA 2018 (TC + NTP) | rat cortex | 17 | 5–12 |
+| confirmatory | kapucu_tuni | Kapucu 2022 rat | rat cortex | 3 | 2–35 |
 
-## 3. Hypotheses
+- **Dev:** tuning is unlimited, and every run is ledgered (`phase: exploratory`). Dev results carry no claim.
+- **Confirmatory:** one run, under Seal 2, on a clean tree (INVARIANT-4).
+- **NFA is not an unseen lab.** It comes from the same lab (EPA, Shafer) as two dev corpora, so for NFA the
+  confirmatory run tests unseen preps, not an unseen lab. NFA dissection dates (2016–2017) are disjoint from the dev EPA
+  dates (2013–2014).
+- **NFA has no spike trains.** It is a feature table (17 endpoints + MI), so the spike encoder cannot be evaluated on
+  it (D21).
+- **Kapucu** is the only unseen-lab confirmatory corpus.
+- **KCL organoids** are deferred until the architecture is frozen (D20).
 
-### H-AGE-P (prerequisite, Wagenaar)
-- **Metric:** out-of-fold MAE of log-DIV, held-out batches. Also reported per DIV bin (3–9,
-  10–16, 17–23, 24–39), not gating.
-- **Survives iff:** UB < min(point MAE of BL-0, BL-1).
-- **If refuted:** the failure is attached to H-A and H-C2.
+**Treatment filters.** These recordings never enter the index; the rules live in `configs/data/<source>.yaml`:
+- g2chvc files carrying KN62 (cortical arrays, from DIV 17), APV (DIV 19+) or UO126 (the whole series): 69 files.
+- EPA-MI dosed wells (columns 2–7).
+- EPA-MI post-bicuculline `_01` recordings.
 
-### H-AGE-N (prerequisite, NFA)
-- **Metric:** same, held-out TC preps, controls only.
-- **Survives iff:** UB < min(BL-0, BL-1).
-- **If refuted:** H-B uses the BL-1 age model, labelled as such.
+Fmr1-KO is a genotype, not a treatment. It stays in the index as a covariate.
 
-### H-A: cross-lab few-shot transfer (Wagenaar → Kapucu rat)
-- **Encoder:** the final Wagenaar encoder, frozen.
-- **Folds:** leave-one-prep-out over `190617`, `250417` and `31017`.
-- **Target:** log1p network-burst rate of the same well at t′, where t′ − t ∈ [6, 8].
-  - The detector is fixed (`configs/features/potter_handcrafted.yaml`).
-  - Alternative target if K3 fires: log mean firing rate at t′.
-- **Labelled unit:** well. The pool is the training preps' wells (24).
-  - k ∈ {1, 2, 4, 8, 16, all}. 30 draws per k (1 at k=all) for ours, BL-A0, BL-A1, BL-A3. BL-A2 (from scratch)
-    uses draws 30/20/30/6/3/1 at k = 1/2/4/8/16/all with 5 seeds per draw (G1 taper + G2).
-- **Pairs:** training uses all pairs of labelled wells. Evaluation uses the held-out prep's pairs
-  with t ∈ {21, 24}.
-- **Methods** (all receive DIV t):
-  - Ours: [frozen z, DIV] → ridge.
-  - BL-A0: DIV only.
-  - BL-A1: [log mean firing rate, log burst rate, DIV].
-  - BL-A2: same architecture from scratch, 40 epochs.
-  - BL-A3: [frozen random-init z, DIV].
-- **Metric:** MAE, lower is better.
-- **Full curve reported.**
-- **Survives iff:** ⟨D17; default (a), worst-fold⟩ for **each** held-out prep, the
-  well-level bootstrap UB of MAE(ours, k = 4) < min over BL-A0…A3 of point MAE at k = all in
-  that prep.
-- **Reported, not gating:** zero-shot age MAE of the Wagenaar age head on Kapucu rat, per prep.
+## 2. Invariants
 
-### H-B: readout (NFA)
-- **Definitions:**
-  - Δ = ŷ − log DIV, out-of-fold.
-  - E = mean Δ(treated) − mean Δ(same-plate controls).
-  - Δ-AUC is taken over DIV 5–12.
-  - Non-cytotoxic: AB ≥ the 5th percentile of control AB.
-- **Detection:** at the 5% false-positive rate of a control-vs-control null, at the highest
-  non-cytotoxic dose.
-- **Gating baselines:** BL-B1 (BL-1 age residual), BL-B2 (best single raw feature, chosen on
-  dev).
-- **Reported, not gating:** BL-B3 (Mahalanobis).
-- **Calibration gate:** the held-out control mean Δ CI contains 0.
-- **Survives iff:** the calibration gate passes and LB(det_Δ) > max point det(BL-B1, BL-B2).
-- **Confirmatory:** NTP under Seal #2.
-- **Sensitivity, not gating:** lowest-dose reference; plate-clustered intervals; cytotoxic
-  doses separately.
-- **Credibility dependency:** if H-C1 REFUTES, B falls regardless of this verdict.
-- **Deviation 3 (compound overlap):** five NTP lockbox compounds (bisphenol AF, captan, parathion, phenanthrene,
-  rotenone) are also in ToxCast dev. Confirmatory detection is reported with and without them; for those five the
-  lockbox tests unseen preps, not unseen compounds.
+1. Splits are by cluster. Transforms and parameters are fit on training clusters only.
+2. Treated recordings never enter age training.
+3. Confirmatory clusters are read only by the single Seal 2 run on a clean tree, and every opening is ledgered.
+4. A leave-one-lab-out test fold holds exactly one lab, and that lab is absent from its training fold
+   (`assert_group_disjoint`).
+5. The only sanctioned identity-probe exception is `SplitPurpose.IDENTITY_PROBE`, built only in
+   `eval/identity_probe.py`.
 
-### H-C1: artefact-only identity probe (NFA), PRIMARY for Claim C
-- **Representation:** per control well, the Δ trajectory over DIV 5/7/9/12 (TC from cross-fit;
-  NTP from the final TC model, under Seal #2). All 18 preps.
-- **Probe:** within each prep, labels = plate; multinomial logistic (inner-CV);
-  leave-one-well-out within plate.
-  - Statistic: excess balanced accuracy pooled over preps.
-  - p-value: 1,000 within-prep well-level permutations.
-- **Canary:**
-  - Per plate, an offset drawn from N(0, (0.5·σ_w)²) added to every transformed input feature
-    of all wells of that plate.
-  - σ_w is the within-plate between-control-well SD, estimated on TC train preps.
-  - The ridge is refit, Δ recomputed, and the probe rerun. 20 seeds.
-- **Reported, not gating:** the same probe on the 25 transformed inputs.
-- **Scope statement (mandatory in the report):** C1 certifies the readout pipeline, not the
-  Wagenaar encoder.
+**QC.** A recording must be at least 600 s long; this is the Seal 1 Potter rule.
+- Length is the stored recording length where one exists (g2chvc). Otherwise it is the time of the last spike.
+- **Known bias:** the last-spike proxy drops 3 EPAmeadev DIV-2 plate recordings (144 well rows) because they are
+  silent. That is an age-correlated exclusion. It may be revised on dev before Seal 2, and every change is ledgered.
 
-### H-C2: encoder batch probe (Wagenaar), PRIMARY, wording-only
-- **Representation:** final-encoder z, within each of the 4 DIV bins.
-- **Probe:** labels = batch; cultures split within batch; 1,000 culture-level permutations.
-- **Canary:**
-  - In each batch, a seeded random 10% of electrodes get extra Poisson spikes at the corpus
-    median per-electrode rate for the DIV bin.
-  - Injected into training data, and the encoder is retrained (1 member). 20 seeds, matching C1.
+## 3. Decision rule (paired)
+
+For each gating baseline b, let Δ_b = stat(claim) − stat(b), computed on the **same** cluster resample (percentile
+bootstrap, B = 4,000, 95%, seed 20261005).
+- For an error metric, the claim survives iff **UB(Δ_b) < 0 for every gating b**.
+- Otherwise the verdict is REFUTES.
+- If the bound cannot be computed (fewer than 5 clusters), the verdict is INCONCLUSIVE.
+- There is no minimum effect size (D5 carried over).
+
+**Error weighting.** MAE is the mean over clusters of the within-cluster mean |error|, in log-DIV. EPA contributes
+5,040 well recordings against roughly 500 for each other lab, so a per-row MAE would mostly measure EPA.
+
+**Identity rule** (unchanged from v3):
+- SUPPORTS iff canary power ≥ 0.8 **and** real-identity permutation p ≥ 0.05.
+- REFUTES iff power ≥ 0.8 and p < 0.05.
+- INCONCLUSIVE iff power < 0.8.
+
+## 4. Dev evaluation (how dev is scored; no claims)
+
+**Primary: leave-one-lab-out (LOLO)** over the four dev labs (`splits/dev_lolo.json`).
+- **Folds:** eglen_grant 22, epa_shafer 16, giugliano 10, potter_gatech 8 clusters.
+- **Fitting:** each fold refits everything (encoder, head, BL-0, BL-1, standardisation) on the other three labs.
+- **Statistic:** the mean over the four held-out labs of the cluster-weighted MAE, so each lab counts equally.
+- **Intervals:** bootstrap resamples clusters within each lab.
+- **Gating:** paired against BL-0 and BL-1.
+- **Also reported:** each fold's Δ with its cluster CI (every fold has ≥ 8 clusters), the worst fold, and error by DIV.
+
+**Required secondary: the DIV 7–12 overlap stratum.** This is the same LOLO analysis with the same models, restricted to
+held-out recordings with DIV in [7, 12]. Every dev lab has recordings there (eglen 7/9/10/11, epa 7/9/12,
+giugliano 7/9/11, potter 7–12). It is always reported. If the primary passes but the stratum fails, the advantage is
+not shown where the labs overlap in age, and it is reported as possibly lab-age confounded.
+
+**Reported: pooled cluster cross-validation.** This uses 4 group folds by cluster, stratified by lab. It adds BL-LAB
+(the training mean log-DIV of the recording's own lab). Its only purpose is to show the size of the lab shortcut, which
+LOLO removes.
+
+**Why LOLO is primary.** DIV windows differ by lab (EPA mostly 2–12, Charlesworth 7–29, Wagenaar 3–39, Fragile-X 7–35).
+A pooled age regressor can therefore lower its error by recognising the lab, which is the shortcut Claim C forbids.
+
+**Known harmonisation issue.** BL-1's network-burst detector was tuned on 59-electrode arrays, while EPA wells have 16
+electrodes. Its parameters may be adapted on dev before Seal 2, and every change is ledgered.
+
+## 5. Confirmatory hypotheses (one run under Seal 2)
+
+### H-AGE-K: cross-lab age transfer (Kapucu rat)
+
+- **Model:** the final pooled encoder plus its age head, trained on all 56 dev clusters. BL-0 and BL-1 are trained on
+  the same clusters.
+- **Metric:** MAE of log-DIV, paired against BL-0 and BL-1.
+- **Inference:** worst-fold. In **each** of the three preps (190617, 250417, 31017), the paired, well-level bootstrap
+  UB(Δ_b) must be < 0 for both baselines.
+- **Scope:** three clusters are below the 5-cluster minimum. The result is within-prep only, with no inference over
+  preps or labs. Two of the three preps record only DIV 21–31.
+
+### H-LAB: lab-identity probe on the pooled model (credibility; sets wording)
+
+- **Representation:** final pooled-encoder z, for dev recordings with DIV in [7, 12].
+- **Probe:** multinomial logistic (inner CV); labels = lab; 4 group folds by cluster, stratified by lab.
+  - Statistic: excess balanced accuracy.
+  - p-value: 1,000 cluster-level permutations.
+- **Canary:** in each lab, a seeded random 10% of electrodes get extra Poisson spikes at the stratum median
+  per-electrode rate.
+  - The canary is injected into training data, and the encoder is retrained (1 member).
+  - 20 seeds; required power 0.8 at α = 0.05.
+- **Reported, not gating:**
+  - rat cortex only (Potter vs EPA);
+  - mouse cortex only (Giugliano vs Charlesworth cortex);
+  - a hand-crafted-feature probe.
 - **Wording:**
-  - SUPPORTS → "the encoder carries no decodable batch identity".
-  - REFUTES → "batch identity is decodable; biology and artefact cannot be separated on this
-    corpus".
-  - INCONCLUSIVE → "underpowered".
 
-## 3b. Compute plan (fixed by the G-time gate, budget 8 h)
+  | Verdict | Wording |
+  |---|---|
+  | SUPPORTS | "lab identity is not decodable from the representation within DIV 7–12" |
+  | REFUTES | "lab identity is decodable; species, region, platform and lab are confounded and cannot be separated; LOLO is the only cross-lab age evidence" |
+  | INCONCLUSIVE | "underpowered" |
 
-Encoder: 400 ms bins, 120 s windows, channels [8, 16, 16], kernel 5, dilations 1/4/16, z ∈ ℝ³², 40 epochs, 1 member
-(shrink-ladder steps 1–2; cut 4). C2 canary: 20 retrains, 1 member each (cut 2). Projected 7.19 h. Machine-readable:
-`protocol/prereg.yaml` `compute_plan`.
+- **Expected outcome:** REFUTES is likely, because platform and species differ by lab. It is pre-declared as
+  wording-only, not as a kill.
 
-**Limitation (temporal resolution).** The encoder bins spikes at 400 ms and, with dilations 1/4/16 at kernel 5, has
-a receptive field of about 34 s. It therefore resolves network-burst-scale dynamics (burst occurrence, inter-burst
-intervals, recruitment across electrodes) and discards sub-200 ms spike-timing structure (intra-burst timing,
-fine-scale synchrony). This was a compute-driven choice, fixed by the pre-declared G-time gate and shrink ladder
-before any model was fit. Any claim about the representation is a claim about burst-scale structure only.
+### Phase 4 battery: TBD_SEAL2
 
-## 4. Baselines (all mandatory, all ledgered)
+Downstream transfer and readout hypotheses, including any NFA feature-level hypothesis, are specified here before
+Seal 2.
 
-| Group | Baselines |
-|---|---|
-| Age | BL-0, BL-1 |
-| A | BL-A0, BL-A1, BL-A2, BL-A3 |
-| B | BL-B1, BL-B2 (gating); BL-B3 (reported) |
-| C1, C2 | canary (validity); input-feature and hand-crafted probes (reported) |
+## 6. Baselines (all ledgered)
 
-## 5. Phases
+| ID | Definition | Gating |
+|---|---|---|
+| BL-0 | training-mean log-DIV | yes |
+| BL-1 | ridge on [log1p mean firing rate, log1p network-burst rate], α = 1, standardised on the training fold | yes |
+| BL-LAB | training mean log-DIV of the recording's lab | no (pooled cluster CV only) |
 
-| Phase | Covers |
-|---|---|
-| `exploratory` | Pre-seal work; TC development |
-| `confirmatory` | All Wagenaar and Kapucu evaluations (no tuning exists); NTP under Seal #2 |
-| `reproduction` | `reproduce.sh` re-runs |
-| `infrastructure` | Disclosures, G-time shrink steps, cut-order decisions, amendments |
+## 7. Disclosures (ledgered)
 
-## 6. Disclosures (ledgered)
+- **Kapucu and NFA were inspected before the confirmatory split existed.** This covered counts, layout and medians
+  (ledger rows 1–4) and the Kapucu wells-with-spikes count (K3 gate). No model has ever seen either corpus.
+- **Wagenaar was used at Seal 1** to train and evaluate the H-AGE-P encoder, and its dev results informed the Phase 1
+  power projection. It is dev data.
+- **Phase 2 inspection of the four new dev corpora** was limited to:
+  - file structure, filenames and metadata fields;
+  - recording lengths (for QC);
+  - spike-list headers and well IDs.
 
-- **Row 1, A13:**
-  - NFA counts, layout and medians (TC and NTP).
-  - Potter index counts.
-  - Kapucu folder listing, and one hPSC file's size, header and line count.
-  - No model fit.
-- **Row 2, recon closure:** listing of every Kapucu rat folder, filenames only. It established
-  the 4 rat preps and their DIVs. These preps are Claim A's test data. No spike file was opened.
+  No activity statistic was inspected. Each inspection went through a script printing ≤ 40 lines.
+
+## 8. Open decision blocking Seal 2
+
+**D21: the confirmatory spike-level evidence is 3 Kapucu preps.** NFA cannot host an encoder evaluation, because it has
+no spikes. Options:
+- **(a)** Accept H-AGE-K as is (within-prep, 3 preps).
+- **(b)** Before any Phase 3 fit, move one dev lab to confirmatory, e.g. Fragile-X (10 preps) or Charlesworth (22).
+  This would give a second unseen-lab, spike-level corpus with ≥ 5 clusters. LOLO would then have 3 folds.
+- **(c)** Evaluate an NFA-feature-level age model trained on dev spikes through harmonised features. This tests the
+  feature pipeline, not the encoder.
+
+Option (b) must be decided before Phase 3 begins, because dev data used for tuning can never become confirmatory.
 
 ## Amendments
 

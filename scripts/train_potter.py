@@ -1,4 +1,5 @@
-"""WI-P2 (under Seal 1): Wagenaar 4-fold batch cross-fit -> artifacts/potter/oof.parquet; final encoder on all 8 batches ->
+"""[Seal-1 run: refuses at HEAD (protocol is v4); reproducible at commits 353cc113..fef0404, rules in protocol/archive/seal-1/.]
+WI-P2 (under Seal 1): Wagenaar 4-fold batch cross-fit -> artifacts/potter/oof.parquet; final encoder on all 8 batches ->
 artifacts/potter/final_encoder/ + final_pred.parquet. Hyperparameters come only from the sealed configs."""
 import hashlib, json, os, sys, time
 import pandas as pd, yaml

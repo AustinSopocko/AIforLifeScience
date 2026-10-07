@@ -11,6 +11,9 @@ Contract
     held-out Kapucu prep, with well-level bootstrap bounds within each prep).
   H-C1 / H-C2 use the identity rule: SUPPORTS iff canary_power >= required_power and real p >= alpha;
     REFUTES iff power >= required_power and p < alpha; INCONCLUSIVE otherwise.
+  Phase 2 (prereg v4, decision_rule.name == paired_vs_each_gating_baseline): results = {"paired": {b: BootstrapResult
+    of stat(claim) - stat(b)}}; survives iff UB < 0 for EVERY gating b (lower-is-better; LB > 0 otherwise).
+    Missing interval (TooFewClusters) -> INCONCLUSIVE. Hypotheses may live under `hypotheses` or `dev_evaluation`.
 `claim_status(verdicts, prereg) -> dict` applies prereg `claim_status` (B falls if H-C1 REFUTES; C holds
 iff H-C1 SUPPORTS; C2 selects wording). `case_number(status, prereg) -> int` returns 1-8 per PLAN §6b.
 Returns label, kill_condition_triggered, and reasons citing every compared quantity and its source.
@@ -26,10 +29,30 @@ class Verdict:
     reasons: list = field(default_factory=list)
 
 
+def _paired(h: dict, results: dict) -> Verdict:
+    gating = h["gating_baselines"]
+    paired = results["paired"]
+    missing = [b for b in gating if b not in paired]
+    if missing:
+        raise KeyError(f"missing gating baselines {missing}")
+    if any(paired[b] is None for b in gating):
+        return Verdict("INCONCLUSIVE", False, [f"interval not computable for {[b for b in gating if paired[b] is None]}"])
+    lower = h["metric"]["direction"] == "lower"
+    ok = all((paired[b].upper < 0) if lower else (paired[b].lower > 0) for b in gating)
+    side = "UB" if lower else "LB"
+    reasons = [f"{side}(claim-{b})={(paired[b].upper if lower else paired[b].lower):.4f} "
+               f"(point {paired[b].point:.4f}, {paired[b].n_clusters} clusters)" for b in gating]
+    return Verdict("SUPPORTS" if ok else "REFUTES", not ok, reasons)
+
+
 def verdict(hypothesis_id: str, results: dict, prereg: dict) -> Verdict:
-    """Implemented so far: the relative rule (H-AGE-P/N style). results = {"claim": BootstrapResult,
-    "baselines": {id: point}}; direction from prereg hypothesis metric."""
-    h = prereg["hypotheses"][hypothesis_id]
+    """Relative rule (v3, Seal 1: H-AGE-P) or paired rule (v4), selected by prereg decision_rule.name.
+    v3 results = {"claim": BootstrapResult, "baselines": {id: point}}; v4 results = {"paired": {id: BootstrapResult}}."""
+    h = prereg.get("hypotheses", {}).get(hypothesis_id) or prereg.get("dev_evaluation", {}).get(hypothesis_id)
+    if h is None:
+        raise KeyError(hypothesis_id)
+    if prereg["decision_rule"]["name"] == "paired_vs_each_gating_baseline":
+        return _paired(h, results)
     gating = h["gating_baselines"]
     missing = [b for b in gating if b not in results["baselines"]]
     if missing:

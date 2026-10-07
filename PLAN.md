@@ -1,5 +1,9 @@
 # Implementation Plan: Age-Pretext Encoder for Neural Organ-on-Chip Electrophysiology
 
+> **Superseded for Phases 2–4 (research restructure, 2026-10-07).** The deadline was removed. The binding protocol is
+> now `PREREGISTRATION.md` v4 (dev/confirmatory split, leave-one-lab-out, paired rule; Seal 2 at architecture freeze).
+> This v3 plan is kept as the record of the Seal 1 work (H-AGE-P REFUTES).
+
 **Version 3.** Revised after D3′, D8–D16 and the 09 Oct UK deadline (decision log in §15). Recon is closed. Nothing in this repo
 is implemented. Every module is a stub whose docstring states its contract.
 

@@ -1,0 +1,145 @@
+# Machine-readable preregistration v3. DRAFT — not sealed.
+# eval/verdicts.py reads decision rules ONLY from this file. No absolute claim thresholds (D5):
+# every claim except C is decided by the relative rule below.
+schema_version: 3
+status: sealed              # Seal 1 (see protocol/seals/seal-1.json); changes only by dated amendment
+open_decisions: []          # all decisions adopted; operator-confirmed final grid
+
+decision_rule:
+  name: relative_bound_vs_best_baseline_point
+  higher_is_better: "lower_bound(claim) > max(point(baseline) for baseline in gating_baselines)"
+  lower_is_better:  "upper_bound(claim) < min(point(baseline) for baseline in gating_baselines)"
+  otherwise: REFUTES
+  if_bound_not_computable: INCONCLUSIVE
+
+statistics:
+  bootstrap: {method: cluster_percentile, n_resamples: 4000, ci: 0.95, seed: 20261005, min_clusters: 5}
+  permutation: {n_permutations: 1000, seed: 20261006}
+  headline_cluster_unit: {potter: batch, kapucu_rat: prep, nfa: prep}
+  sensitivity_cluster_unit: {potter: culture, kapucu_rat: well, nfa: plate}
+
+hypotheses:
+  H-AGE-P:
+    corpus: potter_dense
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]
+    report_by_div_bin: [[3, 9], [10, 16], [17, 23], [24, 39]]
+    on_refute: attach_to_dependent_claims
+  H-AGE-N:
+    corpus: nfa_tc
+    wells: controls_only
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]
+    on_refute: use_BL-1_age_model_for_H-B
+  H-A:
+    corpus: kapucu_rat
+    encoder: final_wagenaar_frozen
+    folds: {type: leave_one_prep_out, preps: ["190617", "250417", "31017"], excluded: {"50618": single_timepoint}}
+    task: forecast_log1p_network_burst_rate
+    horizon_days: {target: 7, window: [6, 8]}
+    alternative_task_if_K3: forecast_log_mean_firing_rate
+    labelled_unit: well
+    k_values: [1, 2, 4, 8, 16, all]
+    full_curve_required: true
+    draws_per_k: {1: 30, 2: 30, 4: 30, 8: 30, 16: 30, all: 1}               # ours, BL-A0, BL-A1, BL-A3 (cheap: full grid)
+    bl_a2_draws_per_k: {1: 30, 2: 20, 4: 30, 8: 6, 16: 3, all: 1}           # G1 taper (finite-population between-draw variance) + G2 full at k=4, all
+    bl_a2_seeds_per_draw: 5
+    train_pairs: all_pairs_of_labelled_wells
+    eval_pairs: {t_in: [21, 24]}
+    all_methods_receive_div: true
+    metric: {name: mae, direction: lower}
+    comparison: {claim: {method: ours, k: 4}, baselines_at_k: all}
+    gating_baselines: [BL-A0, BL-A1, BL-A2, BL-A3]
+    inference: {rule: worst_fold, interval_unit_within_fold: well, require_all_folds: true}   # D17 adopted
+    reported: [zero_shot_age_mae_per_prep]
+  H-B:
+    corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
+    non_cytotoxic: {rule: ab_ge_control_percentile, percentile: 5}
+    null: control_vs_control_within_plate
+    fpr: 0.05
+    dose_rule: highest_non_cytotoxic
+    metric: {name: detection_rate, direction: higher}
+    calibration_gate: {statistic: heldout_control_mean_delta, require: ci_contains_zero}
+    gating_baselines: [BL-B1, BL-B2]                                   # D14
+    reported_baselines: [BL-B3]
+    sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate]
+    credibility_dependency: {hypothesis: H-C1, claim_falls_if: REFUTES}
+    confirmatory_report_with_and_without_dev_overlap_compounds: [bisphenol af, captan, parathion, phenanthrene, rotenone]   # deviation 3: unseen preps, not unseen compounds
+  H-C1:
+    role: primary_claim_C
+    corpus: nfa_all_18_preps
+    representation: {primary: oof_delta_trajectory_controls, reported: transformed_inputs_25d}
+    probe: {type: multinomial_logistic_innercv, target: plate, within: prep, split: leave_one_well_out_within_plate}
+    statistic: excess_balanced_accuracy
+    permutation_level: well_within_prep
+    canary:
+      artefact: per_plate_feature_offset
+      offset_sd_multiple_of_within_plate_control_sd: 0.5
+      sd_estimated_on: nfa_tc_train_preps
+      refit_pipeline: true
+      seeds: 20
+      detection_alpha: 0.05
+      required_power: 0.8
+    verdict: {rule: identity_rule}
+    scope_statement: certifies_readout_pipeline_not_encoder
+  H-C2:
+    role: primary_wording_only
+    corpus: potter_dense
+    stratify_by_div_bin: true
+    representation: final_encoder_all_batches
+    probe: {type: multinomial_logistic_innercv, target: batch, split: culture_within_batch}
+    statistic: excess_balanced_accuracy
+    permutation_level: culture
+    canary:
+      artefact: batch_specific_noisy_electrodes
+      electrode_fraction: 0.10
+      added_rate: corpus_median_electrode_rate_per_div_bin
+      inject_into: training_data
+      retrain: true
+      retrain_members: 1          # cut 2: power check needs no ensemble
+      seeds: 20                   # operator: matches C1
+      detection_alpha: 0.05
+      required_power: 0.8
+    verdict: {rule: identity_rule}
+    reported: [handcrafted_probe]
+
+identity_rule:
+  SUPPORTS: "canary_power >= required_power and real_identity_p >= detection_alpha"
+  REFUTES: "canary_power >= required_power and real_identity_p < detection_alpha"
+  INCONCLUSIVE: "canary_power < required_power"
+
+claim_status:          # PLAN.md §6b; 'falls' = anything other than holds
+  A: "H-A == SUPPORTS"
+  B: "H-B == SUPPORTS and H-C1 != REFUTES"
+  C: "H-C1 == SUPPORTS"
+  C_wording_from: H-C2
+case_number:
+  "1": {A: holds, B: holds, C: holds}
+  "2": {A: falls, B: holds, C: holds}
+  "3": {A: holds, B: falls, C: holds}
+  "4": {A: holds, B: holds, C: falls}
+  "5": {A: falls, B: falls, C: holds}
+  "6": {A: falls, B: holds, C: falls}
+  "7": {A: holds, B: falls, C: falls}
+  "8": {A: falls, B: falls, C: falls}
+  collapse_rule: "if H-C1 == REFUTES then B falls (case 4 -> 7, case 6 -> 8)"
+
+compute_plan:          # final grid + model, fixed by the G-time gate (D8, budget 8 h); applies to encoder, BL-A2 and canary alike
+  encoder: {bin_ms: 400, window_s: 120, channels: [8, 16, 16], kernel: 5, dilations: [1, 4, 16], embedding_dim: 32,
+            epochs: 40, windows_per_recording_per_epoch: 2, batch_size: 64, members: 1}
+  shrink_ladder_applied: [1_bins_400ms, 2_channels_8_16_16]     # step 3 (epochs) not needed; step 4 (members 1) = cut 4
+  grid_changes: [G1_taper_bl_a2, G2_full_bl_a2_at_k4_and_all, cut2_canary_members_1, cut4_wagenaar_members_1]
+  not_applied: [cut3_draws_seeds]
+  g_time: {per_window_ms_train_conservative: 7.8, projected_hours: 7.19, limit_hours: 8, evidence: [artifacts/g_time_ladder.json, artifacts/g_time_final.json]}   # incl. C2 canary x20
+  limitation: "400 ms bins: ~34 s receptive field; resolves network-burst-scale dynamics, discards sub-200 ms spike timing. Compute-driven, fixed by G-time before any fit."
+
+baselines:
+  BL-0:  {type: predict_train_mean}
+  BL-1:  {type: ridge, inputs: [log1p_mean_firing_rate, log1p_network_burst_rate], alpha: 1.0, standardise: train_fold}
+  BL-A0: {type: ridge, inputs: [div]}
+  BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
+  BL-A2: {type: same_arch_from_scratch, epochs: 40}
+  BL-A3: {type: frozen_random_init_encoder_plus_ridge}
+  BL-B1: {type: age_residual, age_model: BL-1}
+  BL-B2: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
+  BL-B3: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf, gating: false}

@@ -1,145 +1,118 @@
-# Machine-readable preregistration v3. DRAFT — not sealed.
-# eval/verdicts.py reads decision rules ONLY from this file. No absolute claim thresholds (D5):
-# every claim except C is decided by the relative rule below.
-schema_version: 3
-status: sealed              # Seal 1 (see protocol/seals/seal-1.json); changes only by dated amendment
-open_decisions: []          # all decisions adopted; operator-confirmed final grid
+# Machine-readable preregistration v4 (Phase 2 research restructure). DRAFT: binding at Seal 2 (architecture freeze).
+# eval/verdicts.py reads decision rules ONLY from this file. Prose twin: PREREGISTRATION.md (YAML wins on disagreement).
+# v3 (Seal 1) is archived by content in protocol/archive/seal-1/ and stays verifiable against protocol/seals/seal-1.json.
+schema_version: 4
+status: draft
+open_decisions: [D21]          # seal() refuses while non-empty or while any TBD_SEAL2 remains
 
-decision_rule:
-  name: relative_bound_vs_best_baseline_point
-  higher_is_better: "lower_bound(claim) > max(point(baseline) for baseline in gating_baselines)"
-  lower_is_better:  "upper_bound(claim) < min(point(baseline) for baseline in gating_baselines)"
-  otherwise: REFUTES
-  if_bound_not_computable: INCONCLUSIVE
+provenance:
+  seal_1: {seal_id: seal-1, protocol_hash: 4991da0c, git_commit: 353cc113, archive: protocol/archive/seal-1/}
+  seal_1_record: "H-AGE-P REFUTES under the unpaired relative rule (ledger rows 16-18). The result stands as reported."
+  seal_1_withdrawn_unrun: [H-AGE-N, H-A, H-B, H-C1, H-C2]   # never run; superseded by this protocol, no data touched for them
+  paired_rule_adoption: prospective_on_dev   # adopted after Seal 1; never re-applied to the Seal-1 H-AGE-P result
+
+data_roles:
+  unit: cluster_id                # "<lab>:<prep>"; EPAmeadev + EPA-MI culture dates that coincide are one cluster
+  manifest: splits/dev_confirmatory.json
+  dev: {sources: [potter, epameadev, epa_mi, g2chvc, fragilex], labs: [potter_gatech, epa_shafer, eglen_grant, giugliano],
+        clusters: 56, use: unlimited_tuning_every_run_ledgered}
+  confirmatory: {sources: [nfa, kapucu_rat], clusters: 20, use: one_run_under_seal_2_clean_tree,
+                 nfa_note: "same lab (epa_shafer) as dev EPA corpora: unseen preps, NOT an unseen lab; feature table only (no spikes)",
+                 kapucu_note: "only unseen-lab corpus; 3 rat preps; spike-level"}
+  deferred: {kcl_organoids: "D20: not ingested until the architecture is frozen"}
+
+qc:
+  min_duration_s: 600             # Seal-1 Potter rule, applied to every spike-level source at binning
+  duration_definition: "stored recording length (g2chvc recordingtime) else last spike time"
+  potter_max_spike_time_s: 3600
+  known_bias: "last-spike length drops 3 EPAmeadev DIV-2 plate recordings (144 well rows) for silence, an age-correlated exclusion; revisable on dev before Seal 2, every change ledgered"
 
 statistics:
   bootstrap: {method: cluster_percentile, n_resamples: 4000, ci: 0.95, seed: 20261005, min_clusters: 5}
   permutation: {n_permutations: 1000, seed: 20261006}
-  headline_cluster_unit: {potter: batch, kapucu_rat: prep, nfa: prep}
-  sensitivity_cluster_unit: {potter: culture, kapucu_rat: well, nfa: plate}
+  error_weighting: cluster_equal   # MAE = mean over clusters of the within-cluster mean |error|; EPA (5,040 rows) cannot dominate
+  lolo_aggregate: lab_equal        # LOLO statistic = mean over the 4 held-out labs of the cluster-weighted MAE
+  lolo_resampling: clusters_within_lab   # stratified: each resample keeps every lab, resamples its clusters
+  age_target: log_div
 
-hypotheses:
-  H-AGE-P:
-    corpus: potter_dense
-    metric: {name: mae_log_div, direction: lower}
-    gating_baselines: [BL-0, BL-1]
-    report_by_div_bin: [[3, 9], [10, 16], [17, 23], [24, 39]]
-    on_refute: attach_to_dependent_claims
-  H-AGE-N:
-    corpus: nfa_tc
-    wells: controls_only
-    metric: {name: mae_log_div, direction: lower}
-    gating_baselines: [BL-0, BL-1]
-    on_refute: use_BL-1_age_model_for_H-B
-  H-A:
-    corpus: kapucu_rat
-    encoder: final_wagenaar_frozen
-    folds: {type: leave_one_prep_out, preps: ["190617", "250417", "31017"], excluded: {"50618": single_timepoint}}
-    task: forecast_log1p_network_burst_rate
-    horizon_days: {target: 7, window: [6, 8]}
-    alternative_task_if_K3: forecast_log_mean_firing_rate
-    labelled_unit: well
-    k_values: [1, 2, 4, 8, 16, all]
-    full_curve_required: true
-    draws_per_k: {1: 30, 2: 30, 4: 30, 8: 30, 16: 30, all: 1}               # ours, BL-A0, BL-A1, BL-A3 (cheap: full grid)
-    bl_a2_draws_per_k: {1: 30, 2: 20, 4: 30, 8: 6, 16: 3, all: 1}           # G1 taper (finite-population between-draw variance) + G2 full at k=4, all
-    bl_a2_seeds_per_draw: 5
-    train_pairs: all_pairs_of_labelled_wells
-    eval_pairs: {t_in: [21, 24]}
-    all_methods_receive_div: true
-    metric: {name: mae, direction: lower}
-    comparison: {claim: {method: ours, k: 4}, baselines_at_k: all}
-    gating_baselines: [BL-A0, BL-A1, BL-A2, BL-A3]
-    inference: {rule: worst_fold, interval_unit_within_fold: well, require_all_folds: true}   # D17 adopted
-    reported: [zero_shot_age_mae_per_prep]
-  H-B:
-    corpus: {dev: nfa_tc, confirmatory: nfa_ntp}
-    non_cytotoxic: {rule: ab_ge_control_percentile, percentile: 5}
-    null: control_vs_control_within_plate
-    fpr: 0.05
-    dose_rule: highest_non_cytotoxic
-    metric: {name: detection_rate, direction: higher}
-    calibration_gate: {statistic: heldout_control_mean_delta, require: ci_contains_zero}
-    gating_baselines: [BL-B1, BL-B2]                                   # D14
-    reported_baselines: [BL-B3]
-    sensitivity: [lowest_dose_reference, plate_level_clusters, cytotoxic_separate]
-    credibility_dependency: {hypothesis: H-C1, claim_falls_if: REFUTES}
-    confirmatory_report_with_and_without_dev_overlap_compounds: [bisphenol af, captan, parathion, phenanthrene, rotenone]   # deviation 3: unseen preps, not unseen compounds
-  H-C1:
-    role: primary_claim_C
-    corpus: nfa_all_18_preps
-    representation: {primary: oof_delta_trajectory_controls, reported: transformed_inputs_25d}
-    probe: {type: multinomial_logistic_innercv, target: plate, within: prep, split: leave_one_well_out_within_plate}
-    statistic: excess_balanced_accuracy
-    permutation_level: well_within_prep
-    canary:
-      artefact: per_plate_feature_offset
-      offset_sd_multiple_of_within_plate_control_sd: 0.5
-      sd_estimated_on: nfa_tc_train_preps
-      refit_pipeline: true
-      seeds: 20
-      detection_alpha: 0.05
-      required_power: 0.8
-    verdict: {rule: identity_rule}
-    scope_statement: certifies_readout_pipeline_not_encoder
-  H-C2:
-    role: primary_wording_only
-    corpus: potter_dense
-    stratify_by_div_bin: true
-    representation: final_encoder_all_batches
-    probe: {type: multinomial_logistic_innercv, target: batch, split: culture_within_batch}
-    statistic: excess_balanced_accuracy
-    permutation_level: culture
-    canary:
-      artefact: batch_specific_noisy_electrodes
-      electrode_fraction: 0.10
-      added_rate: corpus_median_electrode_rate_per_div_bin
-      inject_into: training_data
-      retrain: true
-      retrain_members: 1          # cut 2: power check needs no ensemble
-      seeds: 20                   # operator: matches C1
-      detection_alpha: 0.05
-      required_power: 0.8
-    verdict: {rule: identity_rule}
-    reported: [handcrafted_probe]
+decision_rule:
+  name: paired_vs_each_gating_baseline
+  statistic: "delta_b = stat(claim) - stat(b), both on the SAME cluster resample"
+  lower_is_better: "for every b in gating_baselines: upper_bound(delta_b) < 0"
+  higher_is_better: "for every b in gating_baselines: lower_bound(delta_b) > 0"
+  otherwise: REFUTES
+  if_bound_not_computable: INCONCLUSIVE
+  min_effect: none                 # D5 carried over: no absolute thresholds
 
 identity_rule:
   SUPPORTS: "canary_power >= required_power and real_identity_p >= detection_alpha"
   REFUTES: "canary_power >= required_power and real_identity_p < detection_alpha"
   INCONCLUSIVE: "canary_power < required_power"
 
-claim_status:          # PLAN.md §6b; 'falls' = anything other than holds
-  A: "H-A == SUPPORTS"
-  B: "H-B == SUPPORTS and H-C1 != REFUTES"
-  C: "H-C1 == SUPPORTS"
-  C_wording_from: H-C2
-case_number:
-  "1": {A: holds, B: holds, C: holds}
-  "2": {A: falls, B: holds, C: holds}
-  "3": {A: holds, B: falls, C: holds}
-  "4": {A: holds, B: holds, C: falls}
-  "5": {A: falls, B: falls, C: holds}
-  "6": {A: falls, B: holds, C: falls}
-  "7": {A: holds, B: falls, C: falls}
-  "8": {A: falls, B: falls, C: falls}
-  collapse_rule: "if H-C1 == REFUTES then B falls (case 4 -> 7, case 6 -> 8)"
+dev_evaluation:                    # binding on HOW dev is scored; dev results are phase=exploratory and carry no claim
+  primary:
+    name: leave_one_lab_out
+    manifest: splits/dev_lolo.json
+    folds: [eglen_grant, epa_shafer, giugliano, potter_gatech]
+    fit: "every transform, model and baseline refit on the 3 training labs only"
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]
+    rule: decision_rule
+    reported: [per_fold_delta_with_cluster_ci, worst_fold, per_div_error]
+  secondary_required:
+    name: overlap_stratum
+    div: [7, 12]                   # every dev lab has recordings here (eglen 7/9/10/11, epa 7/9/12, giugliano 7/9/11, potter 7-12)
+    analysis: "the primary LOLO analysis restricted to held-out recordings with DIV in [7, 12]; models unchanged"
+    always_reported: true
+    interpretation: "primary passes but stratum fails -> the advantage is not shown where labs overlap in age; report as possibly lab-age confounded"
+  reported:
+    name: pooled_cluster_cv
+    folds: {type: group_kfold_stratified_by_lab, k: 4, unit: cluster_id, seed: 20261007}
+    gating_baselines_for_contrast: [BL-0, BL-1, BL-LAB]
+    purpose: "shows the lab shortcut: within-lab-seen evaluation where BL-LAB (lab mean log-DIV) is available"
 
-compute_plan:          # final grid + model, fixed by the G-time gate (D8, budget 8 h); applies to encoder, BL-A2 and canary alike
-  encoder: {bin_ms: 400, window_s: 120, channels: [8, 16, 16], kernel: 5, dilations: [1, 4, 16], embedding_dim: 32,
-            epochs: 40, windows_per_recording_per_epoch: 2, batch_size: 64, members: 1}
-  shrink_ladder_applied: [1_bins_400ms, 2_channels_8_16_16]     # step 3 (epochs) not needed; step 4 (members 1) = cut 4
-  grid_changes: [G1_taper_bl_a2, G2_full_bl_a2_at_k4_and_all, cut2_canary_members_1, cut4_wagenaar_members_1]
-  not_applied: [cut3_draws_seeds]
-  g_time: {per_window_ms_train_conservative: 7.8, projected_hours: 7.19, limit_hours: 8, evidence: [artifacts/g_time_ladder.json, artifacts/g_time_final.json]}   # incl. C2 canary x20
-  limitation: "400 ms bins: ~34 s receptive field; resolves network-burst-scale dynamics, discards sub-200 ms spike timing. Compute-driven, fixed by G-time before any fit."
+hypotheses:                        # confirmatory; run once under Seal 2
+  H-AGE-K:
+    role: primary_age_transfer
+    corpus: kapucu_rat
+    clusters: ["kapucu_tuni:190617", "kapucu_tuni:250417", "kapucu_tuni:31017"]
+    model: "final pooled encoder + age head, trained on all 56 dev clusters (architecture frozen at Seal 2)"
+    metric: {name: mae_log_div, direction: lower}
+    gating_baselines: [BL-0, BL-1]   # both trained on all dev clusters
+    inference: {rule: worst_fold, unit_within_fold: well, require_all_folds: true}   # 3 clusters < min_clusters: within-prep only
+    scope: "within these 3 preps; no inference over preps or labs"
+  H-LAB:
+    role: credibility_wording
+    corpus: dev
+    representation: "final pooled encoder z, recordings with DIV in [7, 12]"
+    probe: {type: multinomial_logistic_innercv, target: lab, split: group_kfold_by_cluster_stratified_by_lab, k: 4}
+    statistic: excess_balanced_accuracy
+    permutation_level: cluster
+    canary:
+      artefact: lab_specific_noisy_electrodes
+      electrode_fraction: 0.10
+      added_rate: stratum_median_electrode_rate
+      inject_into: training_data
+      retrain: true
+      retrain_members: 1
+      seeds: 20
+      detection_alpha: 0.05
+      required_power: 0.8
+    verdict: {rule: identity_rule}
+    reported: [rat_cortex_only_potter_vs_epa, mouse_cortex_only_giugliano_vs_eglen_ctx, handcrafted_probe]
+    wording:
+      SUPPORTS: "lab identity is not decodable from the representation within DIV 7-12"
+      REFUTES: "lab identity is decodable; species, region, platform and lab are confounded and cannot be separated; LOLO is the only cross-lab age evidence"
+      INCONCLUSIVE: "underpowered"
+  PHASE4_BATTERY: TBD_SEAL2        # downstream battery (transfer, readout) incl. any NFA feature-level hypothesis; specified before Seal 2
 
 baselines:
-  BL-0:  {type: predict_train_mean}
-  BL-1:  {type: ridge, inputs: [log1p_mean_firing_rate, log1p_network_burst_rate], alpha: 1.0, standardise: train_fold}
-  BL-A0: {type: ridge, inputs: [div]}
-  BL-A1: {type: ridge, inputs: [log_mean_firing_rate, log_network_burst_rate, div]}
-  BL-A2: {type: same_arch_from_scratch, epochs: 40}
-  BL-A3: {type: frozen_random_init_encoder_plus_ridge}
-  BL-B1: {type: age_residual, age_model: BL-1}
-  BL-B2: {type: best_single_raw_feature_deviation_auc, selection: dev_only}
-  BL-B3: {type: mahalanobis_deviation_auc, covariance: ledoit_wolf, gating: false}
+  BL-0:   {type: predict_train_mean}
+  BL-1:   {type: ridge, inputs: [log1p_mean_firing_rate, log1p_network_burst_rate], alpha: 1.0, standardise: train_fold,
+           features: configs/features/potter_handcrafted.yaml}
+  BL-LAB: {type: predict_train_lab_mean, gating: false, only_in: pooled_cluster_cv}
+
+seal_2:
+  trigger: architecture_frozen_on_dev
+  requires: [open_decisions empty, no TBD_SEAL2, PHASE4_BATTERY specified, compute plan fixed]
+  confirmatory_runs: 1
