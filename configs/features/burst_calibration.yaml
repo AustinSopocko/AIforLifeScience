@@ -1,0 +1,21 @@
+# F2: per-platform recalibration of the BL-1 feature detector on DEV only, declared before any calibration run.
+# Goal: BL-1 must not be handicapped on any platform. Selection is deliberately baseline-favouring: parameters are chosen
+# by BL-1's own out-of-fold age error on the platform's dev labs, including the lab that a LOLO fold later holds out.
+platforms:
+  mcs_8x8:      {dev_sources: [potter, g2chvc], applies_to: [potter, g2chvc, fragilex]}
+  axion_48w_16: {dev_sources: [epameadev, epa_mi], applies_to: [epameadev, epa_mi]}
+  multiwell_64: {dev_sources: [], applies_to: [kapucu_rat], rule: "no dev data on this platform: takes the mcs_8x8 parameters (nearest electrode count, 64 vs 59/60); thresholds are fractions/multiples, so they scale"}
+grid:                                     # 3 x 4 x 3 x 3 = 108 settings per platform
+  bin_ms: [50, 100, 200]
+  median_mult: [2, 3, 4, 6]
+  active_frac: [0.1, 0.25, 0.5]
+  min_rate_hz: [0.02, 0.1, 0.5]
+seal1_default: {bin_ms: 100, median_mult: 4, active_frac: 0.25, min_rate_hz: 0.1}
+objective:
+  model: BL-1                             # ridge alpha 1 on [log1p mean_firing_rate, log1p network_burst_rate], standardised in train fold
+  target: log_div
+  cv: {type: group_kfold_by_cluster, k: 4, seed: 20261007}   # within platform; clusters shuffled with the seed then split
+  metric: cluster_weighted_mae            # prereg statistics.error_weighting
+  recordings: "dev, F1 length QC (data/qc.py), analysed span = n_windows x 120 s"
+  tie_break: "lowest MAE; exact ties -> earlier grid order"
+selected: null                            # written by scripts/calibrate_bursts.py; frozen at Seal 2
