@@ -38,11 +38,17 @@ def _paired(h: dict, results: dict) -> Verdict:
     if any(paired[b] is None for b in gating):
         return Verdict("INCONCLUSIVE", False, [f"interval not computable for {[b for b in gating if paired[b] is None]}"])
     lower = h["metric"]["direction"] == "lower"
+    reasons_null = []
+    if "detection_null" in h:           # H-B2: exact permutation detection is a co-condition
+        a, p = h["detection_null"]["alpha"], results["null_p"]
+        reasons_null = [f"detection p={p:.4f} vs alpha {a}"]
+        if not p < a:
+            return Verdict("REFUTES", True, reasons_null)
     ok = all((paired[b].upper < 0) if lower else (paired[b].lower > 0) for b in gating)
     side = "UB" if lower else "LB"
     reasons = [f"{side}(claim-{b})={(paired[b].upper if lower else paired[b].lower):.4f} "
                f"(point {paired[b].point:.4f}, {paired[b].n_clusters} clusters)" for b in gating]
-    return Verdict("SUPPORTS" if ok else "REFUTES", not ok, reasons)
+    return Verdict("SUPPORTS" if ok else "REFUTES", not ok, reasons_null + reasons)
 
 
 def verdict(hypothesis_id: str, results: dict, prereg: dict) -> Verdict:

@@ -11,9 +11,13 @@ Every run records the frozen hash AND its git commit.
   invalid split manifest; writes
   protocol/seals/seal-N.json {seal_id, protocol_hash, prereg_sha256, git_commit, created_utc, components} and tags
   `seal-N-<hash8>`.
+- Seal policy (prereg v5 `seal_policy`): `check_seal_policy(comp)` — for seal N >= 3, every Seal-2 component outside
+  `architecture_paths` must be present and unchanged, and every new component must lie inside them; seal() refuses
+  otherwise. Seal 3 is the architecture freeze; Seal 2 is the evaluation protocol.
 - `matching_seal(hash)` returns the SealRecord with that protocol_hash, or None.
 """
 import datetime
+import fnmatch
 import glob
 import hashlib
 import json
@@ -80,6 +84,19 @@ def matching_seal(protocol_hash: str) -> SealRecord | None:
     return next((s for s in seals() if s.protocol_hash == protocol_hash), None)
 
 
+def check_seal_policy(comp: dict, existing: list | None = None) -> None:
+    existing = seals() if existing is None else existing
+    if len(existing) < 2:
+        return
+    s2 = next(s for s in existing if s.seal_id == "seal-2")
+    arch = yaml.safe_load(open("protocol/prereg.yaml"))["seal_policy"]["architecture_paths"]
+    is_arch = lambda p: any(fnmatch.fnmatch(p, g) for g in arch)
+    bad = [p for p, h in s2.components.items() if not is_arch(p) and comp.get(p) != h]
+    bad += [p for p in comp if p not in s2.components and not is_arch(p)]
+    if bad:
+        raise RuntimeError(f"seal policy: Seal-2 components changed/added outside architecture_paths: {sorted(bad)}")
+
+
 def seal(profile: str | None = None) -> SealRecord:
     from agepretext.data.splits import SplitManifest
     from agepretext.validation.guards import require_clean_tree
@@ -93,6 +110,7 @@ def seal(profile: str | None = None) -> SealRecord:
         raise RuntimeError("prereg has open_decisions")
     for p in glob.glob("splits/*.json"):
         SplitManifest.from_json(p)
+    check_seal_policy(comp)
     h = frozen_hash(comp)
     if matching_seal(h):
         raise RuntimeError(f"protocol already sealed as {matching_seal(h).seal_id}")

@@ -57,6 +57,29 @@ def test_paired_verdict_requires_every_gating_baseline():
     assert verdict("primary", {"paired": {"BL-0": good, "BL-1": None}}, pre).label == "INCONCLUSIVE"
 
 
+def test_b2_requires_detection_and_paired_lower_bound():
+    from agepretext.eval.bootstrap import BootstrapResult as B
+    pre = yaml.safe_load(open("protocol/prereg.yaml"))
+    up = B(0.4, 0.1, 0.7, 10, 4000)
+    both = {"BL-B1g": up, "BL-B2g": up}
+    assert verdict("H-B2", {"paired": both, "null_p": 0.01}, pre).label == "SUPPORTS"
+    assert verdict("H-B2", {"paired": both, "null_p": 0.08}, pre).label == "REFUTES"
+    assert verdict("H-B2", {"paired": {**both, "BL-B2g": B(0.1, -0.1, 0.3, 10, 4000)}, "null_p": 0.01}, pre).label == "REFUTES"
+
+
+def test_seal_policy_allows_only_architecture_changes():
+    from agepretext.validation.protocol import SealRecord, check_seal_policy
+    s1 = SealRecord("seal-1", "h1", "p", "c", "t", {})
+    s2 = SealRecord("seal-2", "h2", "p", "c", "t", {"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "b"})
+    check_seal_policy({"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "B2",
+                       "configs/train/sampling.yaml": "n"}, [s1, s2])
+    with pytest.raises(RuntimeError):
+        check_seal_policy({"protocol/prereg.yaml": "CHANGED", "configs/model/set_encoder.yaml": "b"}, [s1, s2])
+    with pytest.raises(RuntimeError):
+        check_seal_policy({"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "b",
+                           "splits/new.json": "x"}, [s1, s2])
+
+
 def test_seal1_components_verifiable_by_content():
     seal = json.load(open("protocol/seals/seal-1.json"))["components"]
     archived = {"PREREGISTRATION.md": "protocol/archive/seal-1/PREREGISTRATION.md",
@@ -67,9 +90,16 @@ def test_seal1_components_verifiable_by_content():
         assert hashlib.sha256(_canonical(src)).hexdigest() == h, path
 
 
-def test_prereg_v4_blocks_seal_2():
+def test_prereg_v5_ready_for_seal_2():
     pre = yaml.safe_load(open("protocol/prereg.yaml"))
-    assert pre["schema_version"] == 4 and pre["status"] == "draft"
+    assert pre["schema_version"] == 5 and not pre["open_decisions"]
+    assert "TBD_SEAL2" not in open("protocol/prereg.yaml").read()
     assert pre["decision_rule"]["name"] == "paired_vs_each_gating_baseline"
-    assert pre["open_decisions"] or "TBD_SEAL2" in open("protocol/prereg.yaml").read()
-    assert pre["dev_evaluation"]["primary"]["manifest"] == "splits/dev_lolo.json"
+    assert pre["dev_evaluation"]["primary"]["folds"] == ["eglen_grant", "epa_shafer", "potter_gatech"]
+    fx = pre["data_roles"]["confirmatory"]["fragilex"]
+    idx = pd.read_parquet("data/processed/recording_index.parquet") if __import__("os").path.exists(
+        "data/processed/recording_index.parquet") else None
+    if idx is not None:
+        f = idx[idx.source == "fragilex"]
+        assert sorted(f[f.genotype == "wt"].cluster_id.unique()) == fx["wt"]
+        assert sorted(f[f.genotype == "fmr1_ko"].cluster_id.unique()) == fx["ko"]

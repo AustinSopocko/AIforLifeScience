@@ -1,12 +1,16 @@
-# Preregistration: Age-Pretext Encoder (v4, Phase 2 research protocol)
+# Preregistration: Age-Pretext Encoder (v5, Phase 2 research protocol, SEALED at Seal 2)
 
-> **Status: DRAFT.** It becomes binding at **Seal 2**, when the architecture is frozen on dev.
+> **Status: binding from the Seal 2 record onward.** After that, changes are dated amendments with a new seal and a
+> ledger row.
 > - The machine-readable twin is `protocol/prereg.yaml`. If this prose and the YAML disagree, the YAML wins and the
 >   disagreement is a bug.
-> - **Seal 2 is blocked** while `open_decisions` is non-empty (D21, §8) or any `TBD_SEAL2` remains (the Phase 4
->   battery).
-> - v3 (sealed at Seal 1) is archived by content in `protocol/archive/seal-1/`. Every Seal 1 component still hashes to
->   `protocol/seals/seal-1.json`.
+> - **Seal 2 freezes the evaluation protocol:** data roles, splits, QC, detector calibration, hypotheses, rules and
+>   baselines.
+> - **Seal 3 freezes the architecture** after Phase 3 on dev. It may change or add only `configs/model/set_encoder.yaml`
+>   and `configs/train/*.yaml`. `seal()` refuses anything else.
+> - The single confirmatory run requires Seal 3 and a clean tree.
+> - v3 (Seal 1) is archived by content in `protocol/archive/seal-1/`. The `configs/eval/claim_*.yaml` files are Seal 1
+>   records, and no Phase 2 hypothesis reads them.
 
 ## 0. Provenance
 
@@ -14,8 +18,7 @@
 **Phase 2 adopts the paired comparison PROSPECTIVELY, on dev.** The paired rule is never re-applied to the Seal 1
 result.
 
-The other Seal 1 hypotheses (H-AGE-N, H-A, H-B, H-C1, H-C2) were never run. They are withdrawn and superseded by this
-protocol; no data were touched for them.
+The other Seal 1 hypotheses were never run and are withdrawn. H-B-NFA and H-C1 below are re-specified, not resumed.
 
 The spine is unchanged:
 - append-only hash-chained ledger;
@@ -27,118 +30,187 @@ The spine is unchanged:
 ## 1. Data roles
 
 `splits/dev_confirmatory.json` fixes the roles. The unit is `cluster_id = <lab>:<prep>`, where a prep is an independent
-dissection or plating date. EPAmeadev and EPA-MI share three culture dates (20140205, 20140212, 20140402). Each shared
-date is one cluster, not two.
+dissection or plating date. Where EPAmeadev and EPA-MI share a culture date, that date is one cluster.
 
-| Role | Lab | Sources | Species / region | Preps | DIV (after QC) |
+| Role | Lab | Sources | Species / region | Preps | Use |
 |---|---|---|---|---|---|
-| dev | potter_gatech | Wagenaar 2006 | rat cortex | 8 | 3–39 |
-| dev | epa_shafer | EPAmeadev + EPA-MI (controls only) | rat cortex | 16 | 2–37 (mostly 2–12) |
-| dev | eglen_grant | Charlesworth g2chvcdata (drug files excluded) | mouse hippocampus + cortex | 22 | 7–29 |
-| dev | giugliano | Fragile-X (WT + Fmr1-KO) | mouse cortex | 10 | 7–35 |
-| confirmatory | epa_shafer | NFA 2018 (TC + NTP) | rat cortex | 17 | 5–12 |
-| confirmatory | kapucu_tuni | Kapucu 2022 rat | rat cortex | 3 | 2–35 |
+| dev | potter_gatech | Wagenaar 2006 | rat cortex | 8 | tuning, LOLO |
+| dev | epa_shafer | EPAmeadev + EPA-MI (controls) | rat cortex | 16 | tuning, LOLO |
+| dev | eglen_grant | Charlesworth g2chvcdata (drug files excluded) | mouse hippocampus + cortex | 22 | tuning, LOLO |
+| confirmatory | giugliano | Fragile-X **WT** | mouse cortex | 5 | H-AGE-FX (primary A) |
+| confirmatory | giugliano | Fragile-X **Fmr1-KO** vs WT | mouse cortex | 5 + 5 | H-B2 (primary B) |
+| confirmatory | kapucu_tuni | Kapucu 2022 rat | rat cortex | 3 | H-AGE-K (within-prep only) |
+| confirmatory | epa_shafer | NFA 2018 (feature table) | rat cortex | 17 | H-B-NFA, H-C1 |
 
 - **Dev:** tuning is unlimited, and every run is ledgered (`phase: exploratory`). Dev results carry no claim.
-- **Confirmatory:** one run, under Seal 2, on a clean tree (INVARIANT-4).
-- **NFA is not an unseen lab.** It comes from the same lab (EPA, Shafer) as two dev corpora, so for NFA the
-  confirmatory run tests unseen preps, not an unseen lab. NFA dissection dates (2016–2017) are disjoint from the dev EPA
-  dates (2013–2014).
-- **NFA has no spike trains.** It is a feature table (17 endpoints + MI), so the spike encoder cannot be evaluated on
-  it (D21).
-- **Kapucu** is the only unseen-lab confirmatory corpus.
-- **KCL organoids** are deferred until the architecture is frozen (D20).
+- **Confirmatory:** one run (INVARIANT-4).
 
-**Treatment filters.** These recordings never enter the index; the rules live in `configs/data/<source>.yaml`:
-- g2chvc files carrying KN62 (cortical arrays, from DIV 17), APV (DIV 19+) or UO126 (the whole series): 69 files.
-- EPA-MI dosed wells (columns 2–7).
-- EPA-MI post-bicuculline `_01` recordings.
+**D21 (operator decision, option b).** Fragile-X moved from dev to confirmatory before any Phase 3 fit. The recorded
+reasoning:
+- 10 preps clear the 5-cluster bootstrap minimum.
+- DIV 7–35 overlaps the training range.
+- Mouse cortex from a fourth lab is a genuine cross-lab, cross-species generalisation test.
+- Moving Charlesworth instead would remove the only hippocampal tissue and nearly half the non-EPA preps from dev.
 
-Fmr1-KO is a genotype, not a treatment. It stays in the index as a covariate.
+**NFA** is the same lab as dev EPA, so for NFA the confirmatory run tests unseen preps, not an unseen lab. It has no
+spikes, so the encoder cannot enter it. **KCL organoids** are deferred until the architecture is frozen (D20).
 
 ## 2. Invariants
 
 1. Splits are by cluster. Transforms and parameters are fit on training clusters only.
 2. Treated recordings never enter age training.
-3. Confirmatory clusters are read only by the single Seal 2 run on a clean tree, and every opening is ledgered.
-4. A leave-one-lab-out test fold holds exactly one lab, and that lab is absent from its training fold
-   (`assert_group_disjoint`).
+3. Confirmatory clusters are read only by the single run under Seal 3 on a clean tree, and every opening is ledgered.
+   No Fragile-X recording, WT or KO, is ever used to fit or tune anything.
+4. A leave-one-lab-out (LOLO) test fold holds exactly one lab, and that lab is absent from its training fold.
 5. The only sanctioned identity-probe exception is `SplitPurpose.IDENTITY_PROBE`, built only in
    `eval/identity_probe.py`.
 
-**QC.** A recording must be at least 600 s long; this is the Seal 1 Potter rule.
-- Length is the stored recording length where one exists (g2chvc). Otherwise it is the time of the last spike.
-- **Known bias:** the last-spike proxy drops 3 EPAmeadev DIV-2 plate recordings (144 well rows) because they are
-  silent. That is an age-correlated exclusion. It may be revised on dev before Seal 2, and every change is ledgered.
+## 3. Length QC (F1)
 
-## 3. Decision rule (paired)
+Exclusion is on recorded **duration**, never on last-spike time (`configs/data/qc.yaml`, `data/qc.py`).
+- **Stored length** (g2chvc `recordingtime`; EPA-MI "Analysis Duration (s)", 902–1316 s): a recording is excluded iff
+  it is shorter than 600 s. On dev this excludes nothing.
+- **No recorded length** (Potter, EPAmeadev, EPA-MI plate 20140423, Fragile-X): the recording is never excluded for
+  length, because a short last-spike time cannot separate a silent recording from a short one, and silence is age
+  information. It gets max(1, ⌊last spike / 120 s⌋) windows, with zeros after the last spike.
+- **Effect on dev versus the Seal 1 rule:** 294 rows restored.
+  - 3 silent EPAmeadev DIV-2 plates (144 rows, 1–3 windows each).
+  - 3 short mature EPAmeadev plate recordings (144 rows).
+  - 6 Potter recordings. The mature ones (DIV 13–34, last spike 12–127 s) look truncated, not silent; they are kept
+    with one window each.
+- **Sensitivity:** the Seal 1 rule is reported next to every result. It is not gating.
+
+## 4. BL-1 detector calibration (F2)
+
+A handicapped gating baseline would make the encoder look better for the wrong reason. So BL-1's feature detector was
+recalibrated **per platform on dev** before any claim runs (`configs/features/burst_calibration.yaml`;
+results in `research/f2_burst_calibration.json`).
+- **Search:** 108 settings, declared before the run (ledger row 28).
+- **Selection criterion:** BL-1's own 4-fold group-by-cluster out-of-fold age MAE. This is deliberately
+  baseline-favouring: it includes the lab that a LOLO fold later holds out.
+
+| Platform | Dev data | Applies to | bin (ms) | median × | active fraction | min rate (Hz) |
+|---|---|---|---|---|---|---|
+| mcs_8x8 (59/60 electrodes) | Potter + Charlesworth | Potter, Charlesworth, **Fragile-X** | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ |
+| axion_48w_16 (16 per well) | EPAmeadev + EPA-MI | EPA | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ | ⟨F2⟩ |
+| multiwell_64 | none | Kapucu | = mcs_8x8 (nearest electrode count) | | | |
+| Seal 1 default | — | — | 100 | 4 | 0.25 | 0.1 |
+
+## 5. Decision rule (paired)
 
 For each gating baseline b, let Δ_b = stat(claim) − stat(b), computed on the **same** cluster resample (percentile
 bootstrap, B = 4,000, 95%, seed 20261005).
-- For an error metric, the claim survives iff **UB(Δ_b) < 0 for every gating b**.
-- Otherwise the verdict is REFUTES.
-- If the bound cannot be computed (fewer than 5 clusters), the verdict is INCONCLUSIVE.
-- There is no minimum effect size (D5 carried over).
+- For an error metric, the claim survives iff UB(Δ_b) < 0 for **every** gating b.
+- For a higher-is-better metric, it survives iff LB(Δ_b) > 0 for every gating b.
+- Otherwise the verdict is REFUTES. If the bound cannot be computed (fewer than 5 clusters), it is INCONCLUSIVE.
+- There is no minimum effect size.
 
-**Error weighting.** MAE is the mean over clusters of the within-cluster mean |error|, in log-DIV. EPA contributes
-5,040 well recordings against roughly 500 for each other lab, so a per-row MAE would mostly measure EPA.
+**Error weighting.** MAE is the mean over clusters of the within-cluster mean |error|, in log-DIV.
 
-**Identity rule** (unchanged from v3):
+**Identity rule:**
 - SUPPORTS iff canary power ≥ 0.8 **and** real-identity permutation p ≥ 0.05.
 - REFUTES iff power ≥ 0.8 and p < 0.05.
 - INCONCLUSIVE iff power < 0.8.
 
-## 4. Dev evaluation (how dev is scored; no claims)
+## 6. Dev evaluation (no claims)
 
-**Primary: leave-one-lab-out (LOLO)** over the four dev labs (`splits/dev_lolo.json`).
-- **Folds:** eglen_grant 22, epa_shafer 16, giugliano 10, potter_gatech 8 clusters.
-- **Fitting:** each fold refits everything (encoder, head, BL-0, BL-1, standardisation) on the other three labs.
-- **Statistic:** the mean over the four held-out labs of the cluster-weighted MAE, so each lab counts equally.
-- **Intervals:** bootstrap resamples clusters within each lab.
+**Primary: LOLO** over three folds (eglen_grant 22, epa_shafer 16, potter_gatech 8 clusters).
+- **Fitting:** each fold refits everything on the other two labs.
+- **Statistic:** the mean over held-out labs of the cluster-weighted MAE.
+- **Intervals:** clusters are resampled within each lab.
 - **Gating:** paired against BL-0 and BL-1.
-- **Also reported:** each fold's Δ with its cluster CI (every fold has ≥ 8 clusters), the worst fold, and error by DIV.
+- **Also reported:** each fold's Δ, the worst fold, error by DIV, and the Seal 1 QC sensitivity.
 
-**Required secondary: the DIV 7–12 overlap stratum.** This is the same LOLO analysis with the same models, restricted to
-held-out recordings with DIV in [7, 12]. Every dev lab has recordings there (eglen 7/9/10/11, epa 7/9/12,
-giugliano 7/9/11, potter 7–12). It is always reported. If the primary passes but the stratum fails, the advantage is
-not shown where the labs overlap in age, and it is reported as possibly lab-age confounded.
+**Required secondary: the DIV 7–12 overlap stratum.** This is the same analysis restricted to held-out recordings with
+DIV in [7, 12]. It is always reported. If the primary passes but the stratum fails, the result is reported as possibly
+lab-age confounded.
 
-**Reported: pooled cluster cross-validation.** This uses 4 group folds by cluster, stratified by lab. It adds BL-LAB
-(the training mean log-DIV of the recording's own lab). Its only purpose is to show the size of the lab shortcut, which
-LOLO removes.
+**Reported: pooled cluster cross-validation** with BL-LAB (the lab-mean baseline). Its purpose is to show the size of
+the lab shortcut that LOLO removes.
 
-**Why LOLO is primary.** DIV windows differ by lab (EPA mostly 2–12, Charlesworth 7–29, Wagenaar 3–39, Fragile-X 7–35).
-A pooled age regressor can therefore lower its error by recognising the lab, which is the shortcut Claim C forbids.
+**Phase 3 requirement (training imbalance).** EPA has about 10 times the recordings of any other dev lab. Per-cluster
+scoring handles evaluation, but Phase 3 training must address the imbalance explicitly. The sampling scheme is
+proposed and ledgered before the first Phase 3 fit and frozen at Seal 3. One final model, trained on all 46 dev
+clusters, serves H-AGE-FX, H-AGE-K, H-B2 and H-LAB.
 
-**Known harmonisation issue.** BL-1's network-burst detector was tuned on 59-electrode arrays, while EPA wells have 16
-electrodes. Its parameters may be adapted on dev before Seal 2, and every change is ledgered.
+## 7. Confirmatory hypotheses (one run under Seal 3)
 
-## 5. Confirmatory hypotheses (one run under Seal 2)
+### H-AGE-FX: cross-lab, cross-species age transfer (PRIMARY, Claim A)
 
-### H-AGE-K: cross-lab age transfer (Kapucu rat)
+- **Data:** Fragile-X **wild-type only**, 5 preps (CS152, CS156, CS192, CS193, CS195).
+- **Comparison:** the final pooled encoder's age head against BL-0 and BL-1, both trained on all dev clusters. BL-1 uses
+  the mcs_8x8 parameters.
+- **Rule:** paired, with cluster-weighted MAE of log-DIV. Clusters are resampled (5 = the minimum).
+- **Required secondary:** WT recordings with DIV in [7, 12] (DIV 7, 9, 11).
+- **Reported:** error by DIV, the knock-out (KO) zero-shot age MAE, and the Seal 1 QC sensitivity.
 
-- **Model:** the final pooled encoder plus its age head, trained on all 56 dev clusters. BL-0 and BL-1 are trained on
-  the same clusters.
-- **Metric:** MAE of log-DIV, paired against BL-0 and BL-1.
-- **Inference:** worst-fold. In **each** of the three preps (190617, 250417, 31017), the paired, well-level bootstrap
-  UB(Δ_b) must be < 0 for both baselines.
-- **Scope:** three clusters are below the 5-cluster minimum. The result is within-prep only, with no inference over
-  preps or labs. Two of the three preps record only DIV 21–31.
+### H-AGE-K: unseen-lab age transfer, rat (secondary, Claim A)
 
-### H-LAB: lab-identity probe on the pooled model (credibility; sets wording)
+- **Data:** Kapucu preps 190617, 250417 and 31017.
+- **Comparison:** paired against BL-0 and BL-1. BL-1 uses the mcs_8x8 parameters.
+- **Inference:** worst-fold. In **each** prep, the well-level bootstrap UB(Δ_b) must be < 0.
+- **Scope:** within these 3 preps only. Two of them record only DIV 21–31.
 
-- **Representation:** final pooled-encoder z, for dev recordings with DIV in [7, 12].
-- **Probe:** multinomial logistic (inner CV); labels = lab; 4 group folds by cluster, stratified by lab.
-  - Statistic: excess balanced accuracy.
-  - p-value: 1,000 cluster-level permutations.
-- **Canary:** in each lab, a seeded random 10% of electrodes get extra Poisson spikes at the stratum median
-  per-electrode rate.
-  - The canary is injected into training data, and the encoder is retrained (1 member).
-  - 20 seeds; required power 0.8 at α = 0.05.
-- **Reported, not gating:**
-  - rat cortex only (Potter vs EPA);
-  - mouse cortex only (Giugliano vs Charlesworth cortex);
-  - a hand-crafted-feature probe.
+### H-B2: age residual detects a genetic perturbation, Fmr1-KO vs WT (PRIMARY, Claim B)
+
+This is perturbation detection on a genetic rather than a chemical perturbation, and it was written before anything
+was fitted.
+
+- **Residual:** Δ = predicted log-DIV − log DIV per recording, from the same final encoder. It is zero-shot: no Fragile-X
+  recording is ever used for fitting or tuning.
+- **Shared DIVs:** WT and KO share DIV 7, 9, 14, 21, 28 and 35.
+- **Statistic:**
+  - m_p(v) = the mean Δ of prep p's recordings at DIV v.
+  - E = the mean over shared v of [mean over KO preps of m_p(v) − mean over WT preps of m_p(v)].
+  - s = the pooled within-genotype SD of the DIV-centred prep means.
+  - The effect is |d| = |E/s|, two-sided.
+- **Detection null:** an exact permutation test over all 252 assignments of genotype labels to the 10 preps (5 vs 5).
+  Prep is the unit, so differences between culture sessions are part of the null.
+- **Gating baselines** (the same statistic):
+  - BL-B1g: BL-1's age residual.
+  - BL-B2g: the larger effect of the two raw BL-1 features. Taking the post-hoc maximum deliberately favours the
+    baseline.
+- **Rule:** SUPPORTS iff the permutation p < 0.05 **and** LB(|d_enc| − |d_b|) > 0 for both baselines. Preps are
+  resampled within genotype (5 + 5). Otherwise the verdict is REFUTES, or INCONCLUSIVE if the bound cannot be computed.
+- **Dependency:** if H-AGE-FX REFUTES, the verdict stands, but the wording becomes "separation by the residual of an age
+  model that did not beat its baselines on WT".
+
+### H-B-NFA: chemical perturbation readout on NFA (secondary, Claim B; feature-level)
+
+This is v3 H-B re-specified. All 17 preps are confirmatory, so there is no NFA dev data to fit on. Instead, the age
+model is cross-fit inside NFA with every setting fixed here.
+- **Age model:** ridge (α = 1) on the 17 endpoints plus MI (`configs/features/nfa17.yaml`), bagged over preps (M = 5),
+  fit on control wells, leave-one-prep-out across the 17 preps.
+- **Age check (H-AGE-N):** paired against BL-0 and BL-1-NFA. If it REFUTES, H-B-NFA uses the BL-1-NFA age model,
+  labelled as such.
+- **Definitions:**
+  - Δ = ŷ − log DIV, out-of-fold.
+  - The effect is mean Δ(treated) − mean Δ(same-plate controls), summarised as the AUC over DIV 5–12.
+  - Non-cytotoxic: AB ≥ the 5th percentile of control AB.
+- **Detection:** at the 5% false-positive rate of a within-plate control-vs-control null, at the highest
+  non-cytotoxic dose.
+- **Rule:**
+  - The calibration gate passes: the held-out control mean Δ CI contains 0.
+  - **And** LB(det_claim − det_b) > 0 against BL-B1 and BL-B2. BL-B2 is selected on the training preps of each fold.
+- **Reported, not gating:** BL-B3 and the sensitivity analyses.
+- **Dependency:** H-B-NFA falls if H-C1 REFUTES.
+
+### H-C1: plate identity in the NFA readout (PRIMARY, Claim C)
+
+- **Representation:** the out-of-fold Δ trajectory of control wells over DIV 5/7/9/12.
+- **Probe:** within each prep, labels = plate; leave-one-well-out within plate; 1,000 within-prep well permutations.
+- **Canary:** a per-plate offset of 0.5 × the within-plate control SD (estimated on each fold's training preps). The
+  pipeline is refit; 20 seeds; required power 0.8.
+- **Rule:** identity rule.
+- **Scope statement:** it certifies the NFA readout pipeline, not the encoder.
+
+### H-LAB: lab identity in the pooled encoder (Claim C wording)
+
+- **Representation:** final-encoder z for dev recordings with DIV in [7, 12].
+- **Probe:** multinomial logistic, labels = lab, 4 group folds by cluster stratified by lab; cluster-level
+  permutations.
+- **Canary:** lab-specific noisy electrodes (10% of electrodes, at the stratum median rate), injected into training
+  data, encoder retrained; 20 seeds; required power 0.8.
 - **Wording:**
 
   | Verdict | Wording |
@@ -147,46 +219,39 @@ electrodes. Its parameters may be adapted on dev before Seal 2, and every change
   | REFUTES | "lab identity is decodable; species, region, platform and lab are confounded and cannot be separated; LOLO is the only cross-lab age evidence" |
   | INCONCLUSIVE | "underpowered" |
 
-- **Expected outcome:** REFUTES is likely, because platform and species differ by lab. It is pre-declared as
-  wording-only, not as a kill.
+### Claim status
 
-### Phase 4 battery: TBD_SEAL2
+- A holds iff H-AGE-FX SUPPORTS.
+- B holds iff H-B2 SUPPORTS.
+- C holds iff H-C1 SUPPORTS.
+- C's wording comes from H-LAB.
+- H-AGE-K and H-B-NFA verdicts are always reported beside the claims, but they never change them.
+- The case number (1–8) follows the table in `prereg.yaml`.
 
-Downstream transfer and readout hypotheses, including any NFA feature-level hypothesis, are specified here before
-Seal 2.
+## 8. Baselines
 
-## 6. Baselines (all ledgered)
-
-| ID | Definition | Gating |
+| ID | Definition | Gating for |
 |---|---|---|
-| BL-0 | training-mean log-DIV | yes |
-| BL-1 | ridge on [log1p mean firing rate, log1p network-burst rate], α = 1, standardised on the training fold | yes |
-| BL-LAB | training mean log-DIV of the recording's lab | no (pooled cluster CV only) |
+| BL-0 | training-mean log-DIV | ages, LOLO |
+| BL-1 | ridge on log1p [mean firing rate, network-burst rate], per-platform detector (§4) | ages, LOLO |
+| BL-LAB | lab-mean log-DIV | none (pooled cross-validation only) |
+| BL-B1g / BL-B2g | BL-1 residual / max raw feature, H-B2 statistic | H-B2 |
+| BL-1-NFA, BL-B1, BL-B2, BL-B3 | as in v3, with selection inside the cross-fit | H-AGE-N, H-B-NFA (B3 reported) |
 
-## 7. Disclosures (ledgered)
+## 9. Disclosures (ledgered)
 
 - **Kapucu and NFA were inspected before the confirmatory split existed.** This covered counts, layout and medians
-  (ledger rows 1–4) and the Kapucu wells-with-spikes count (K3 gate). No model has ever seen either corpus.
-- **Wagenaar was used at Seal 1** to train and evaluate the H-AGE-P encoder, and its dev results informed the Phase 1
-  power projection. It is dev data.
-- **Phase 2 inspection of the four new dev corpora** was limited to:
-  - file structure, filenames and metadata fields;
-  - recording lengths (for QC);
-  - spike-list headers and well IDs.
+  (ledger rows 1–4) and the Kapucu wells-with-spikes count (K3). No model has ever seen either corpus.
+- **Fragile-X was dev during Phase 2.1.** Its files were opened for:
+  - structure and filenames;
+  - per-file last-spike times (length QC);
+  - one file's spike-array shape, time range and electrode range.
 
-  No activity statistic was inspected. Each inspection went through a script printing ≤ 40 lines.
-
-## 8. Open decision blocking Seal 2
-
-**D21: the confirmatory spike-level evidence is 3 Kapucu preps.** NFA cannot host an encoder evaluation, because it has
-no spikes. Options:
-- **(a)** Accept H-AGE-K as is (within-prep, 3 preps).
-- **(b)** Before any Phase 3 fit, move one dev lab to confirmatory, e.g. Fragile-X (10 preps) or Charlesworth (22).
-  This would give a second unseen-lab, spike-level corpus with ≥ 5 clusters. LOLO would then have 3 folds.
-- **(c)** Evaluate an NFA-feature-level age model trained on dev spikes through harmonised features. This tests the
-  feature pipeline, not the encoder.
-
-Option (b) must be decided before Phase 3 begins, because dev data used for tuning can never become confirmatory.
+  No feature or model was ever computed on it (ledger row 25).
+- **Wagenaar was used at Seal 1** (H-AGE-P) and in the Phase 1 projection. It is dev data.
+- **Phase 2 inspection of the dev corpora** was limited to structure, metadata, recording lengths and headers. One
+  EPA-MI statistics-file printout included one burst-duration value (dev data).
+- **F2 is the only dev fitting before Seal 2:** BL-1 ridge models over the declared grid.
 
 ## Amendments
 
