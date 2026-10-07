@@ -11,6 +11,10 @@ Contract
   appears in both files and is assigned to dev; see ledger) -> splits/nfa_lockbox.json.
   PRETEXT_CROSSFIT over TC dev preps, 6 folds x 2 -> splits/nfa_dev_cv6.json.
 - IDENTITY_PROBE splits (Claim C) are built inside eval.identity_probe, never written here.
+- Phase 2 `make_pooled_splits(index, *, name, purpose, seed, dev_sources, confirmatory_sources)` works on
+  cluster_id ("<lab>:<prep>", unit "cluster", source "pooled"):
+  DEV_CONFIRMATORY -> partitions {dev, confirmatory} -> splits/dev_confirmatory.json;
+  LEAVE_ONE_LAB_OUT -> partitions {dev}, one fold per dev lab (fold id = lab) -> splits/dev_lolo.json.
 - Manifests are committed; `agepretext split --check` re-derives and compares byte-for-byte.
 """
 import hashlib
@@ -71,5 +75,25 @@ def make_group_splits(index, *, name: str, source: str, unit: str, purpose: Spli
         chunks = [sorted(c.tolist()) for c in np.array_split(np.array(perm, dtype=object), n_folds)]
         folds = {f"fold{i}": {"test": c, "train": sorted(set(preps) - set(c))} for i, c in enumerate(chunks)}
         m = SplitManifest(name, source, purpose, unit, seed, {"all": preps}, folds)
+    assert_group_disjoint(m, index)
+    return m
+
+
+def make_pooled_splits(index, *, name: str, purpose: SplitPurpose, seed: int, dev_sources: list[str],
+                       confirmatory_sources: list[str], unit: str = "cluster", source: str = "pooled") -> SplitManifest:
+    if unit != "cluster":
+        raise ValueError("pooled splits are by cluster (lab:prep) only")
+    t = index.table
+    dev = sorted(set(t[t.source.isin(dev_sources)].cluster_id))
+    conf = sorted(set(t[t.source.isin(confirmatory_sources)].cluster_id))
+    if purpose is SplitPurpose.DEV_CONFIRMATORY:
+        m = SplitManifest(name, source, purpose, unit, seed, {"dev": dev, "confirmatory": conf}, {})
+    elif purpose is SplitPurpose.LEAVE_ONE_LAB_OUT:
+        lab = t.drop_duplicates("cluster_id").set_index("cluster_id").lab
+        folds = {L: {"test": [c for c in dev if lab[c] == L], "train": [c for c in dev if lab[c] != L]}
+                 for L in sorted({lab[c] for c in dev})}
+        m = SplitManifest(name, source, purpose, unit, seed, {"dev": dev}, folds)
+    else:
+        raise ValueError(purpose)
     assert_group_disjoint(m, index)
     return m

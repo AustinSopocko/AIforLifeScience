@@ -1,0 +1,21 @@
+# Ball et al. 2017 EPA "Mutual Information" ontogeny plates (rat cortex, Axion 48-well). DEV corpus (Phase 2, D19).
+# US public domain (EPA ScienceHub licence). Runtime download only.
+name: epa_mi_2017
+lab: epa_shafer
+fetch: {kind: zip, url: "https://pasteur.epa.gov/uploads/10.23719/1375317/Mutual%20Information%20Data%20and%20Scripts.zip",
+        archive: "Mutual Information Data and Scripts.zip", extract_to: outer,
+        inner: {archive: "outer/Lab/NHEERL_MEA/PIP3 - Project/Mutual Information Paper/MI Science Hub/spikeLists/spikeLists.zip", extract_to: spikelists}}
+files_glob: "spikelists/*/ON_*_00(000)_Spike Detector (8 x STD)(00?)_spike_list.csv"
+filename: "ON_<YYYYMMDD culture date>_<MW plate>_<DIV>_<rec>(000)_Spike Detector ..._spike_list.csv"
+recording_rule: "rec == 00 only; rec 01 is the post-bicuculline recording at the last DIV (sheet BIC) and is excluded"
+div_token_fix: {"012": 12}
+csv: {columns: [Investigator, "", "Time (s)", Electrode, "Amplitude(mV)"], electrode: "<well>_<electrode>", trailer_rows: non_numeric_time}
+hierarchy: {prep: culture_date, plate: "<culture_date>_<MW plate>", well: "<plate>:<well>", timepoint: DIV}
+control_wells: {cols: [1, 8], rows: [A, B, C, D, E, F]}   # sa1_MI_333.m l.173 test(:,[1,8],:,:); Summary sheet: 2 conc-0 wells per chemical row
+treated_wells: excluded_from_index   # cols 2-7 dosed from plating; never enter age training
+species: rat
+region: cortex
+electrodes_per_well: 16
+shared_preps_with_epameadev: ["20140205", "20140212", "20140402"]   # same dissection date -> same prep (cluster) in the pooled index
+verified: {plates: 4, culture_dates: 4, divs: [2, 5, 7, 9, 12], control_wells_per_plate: 12}
+duplicate_rule: "more than one file for the same (plate, DIV): keep the first by filename (none observed)"

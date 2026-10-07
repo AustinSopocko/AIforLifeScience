@@ -1,0 +1,18 @@
+# Charlesworth et al. 2015 g2chvcdata (mouse C57 hippocampus + cortex, MCS 8x8 59 electrodes). DEV corpus (Phase 2, D19).
+# GPL-2. Runtime download only (pinned git commit).
+name: g2chvc_2015
+lab: eglen_grant
+fetch: {kind: git, url: https://github.com/sje30/g2chvcdata, commit: a179233b9779f6b3c112c1877e320f9744588cc1}
+files_glob: "repo/inst/extdata/*.h5"
+h5: {spikes: spikes, counts_per_channel: sCount, channel_names: names, channel_name: "ch_<NN><X>_unit_0", time_unit: s,
+     prep: meta/DIV0, div: meta/age, region: meta/region, genotype: meta/genotype, duration: recordingtime}
+hierarchy: {prep: meta/DIV0 (plating date), plate: array (filename stem without DIV token), well: array, timepoint: meta/age}
+div_source: meta/age            # 6 filenames carry no DIV token
+species: mouse
+regions: {hpc: hippocampus, ctx: cortex}
+electrodes: 59
+treatment_rule: "exclude any file whose name carries a drug token: KN62 (cortical arrays, recorded from DIV17), APV (DIV19+), UO126 (whole series)"
+drug_tokens: [KN62, APV, UO126]
+kept_with_note: "preSham (DIV14, before a sham/vehicle handling) and later recordings of those arrays are kept: no drug"
+verified: {files: 587, plating_dates: 23, hpc_dates: 15, ctx_dates: 8, drug_files: {KN62: 36, APV: 12, UO126: 21}, kept_files: 518}
+duplicate_rule: "more than one file for the same (array, DIV): keep the first by filename (none observed)"

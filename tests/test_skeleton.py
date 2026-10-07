@@ -9,6 +9,8 @@ MODULES = [
     "agepretext", "agepretext.cli", "agepretext.config", "agepretext.invariants", "agepretext.report_numbers",
     "agepretext.data.download", "agepretext.data.index", "agepretext.data.splits", "agepretext.data.windows",
     "agepretext.data.sources.nfa", "agepretext.data.sources.potter", "agepretext.data.sources.kapucu",
+    "agepretext.data.sources.epameadev", "agepretext.data.sources.epa_mi", "agepretext.data.sources.g2chvc",
+    "agepretext.data.sources.fragilex",
     "agepretext.features.harmonise", "agepretext.features.potter_handcrafted", "agepretext.models.ridge_age",
     "agepretext.models.set_encoder", "agepretext.models.heads", "agepretext.models.ensemble",
     "agepretext.train.pretext", "agepretext.train.crossfit", "agepretext.eval.bootstrap", "agepretext.eval.nulls",

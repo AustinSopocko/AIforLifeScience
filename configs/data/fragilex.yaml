@@ -1,0 +1,17 @@
+# Moskalyuk et al. 2020 Fragile-X (mouse cortex, WT + Fmr1-KO; MCS 60 electrodes). DEV corpus (Phase 2, D19).
+# CC-BY 4.0. Runtime download only.
+name: fragilex_2020
+lab: giugliano
+fetch: {kind: zip, url: https://ndownloader.figshare.com/files/12000716, archive: MEA_experiments.zip, extract_to: extracted,
+        extra: {readme.txt: https://ndownloader.figshare.com/files/12000704}}
+files_glob: "extracted/MEA_experiments/{WT,KO}/CultureSession*/MEA_*/*_spikes.mat"
+ignore: ["__MACOSX", ".DS_Store"]
+filename: "<session>_<wt|ko>_<MEA id>_div<NN>_sp_<YYYYMMDDhhmm>_spikes.mat"
+mat: {variable: spikes, columns: [time_ms, electrode_1_to_60]}
+hierarchy: {prep: CultureSession (distinct culture dates per README), plate: "CS<session>_<MEA>", well: plate, timepoint: div}   # MEAs reused across sessions (13 IDs)
+genotype: {WT: wt, KO: fmr1_ko}          # covariate; KO is genotype, not treatment: kept, flagged
+species: mouse
+region: cortex
+electrodes: 60
+verified: {files: 264, sessions: {wt: [152, 156, 192, 193, 195], ko: [167, 169, 178, 183, 199]}}
+duplicate_rule: "more than one file for the same (MEA, div): keep the earliest timestamp (none observed)"

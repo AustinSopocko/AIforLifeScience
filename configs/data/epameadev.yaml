@@ -1,0 +1,17 @@
+# Cotterill et al. 2016 EPAmeadev (rat P0 cortex, Axion 48-well, 16 electrodes/well). DEV corpus (Phase 2, D19).
+# "Free to use, cite"; paper CC-BY 3.0. Runtime download only (pinned git commit).
+name: epameadev_2016
+lab: epa_shafer
+fetch: {kind: git, url: https://github.com/sje30/EPAmeadev, commit: a120e8982a6e4d0ab616c5d9e444ad4b1457e5a1, sparse: [allH5Files]}
+files_glob: "repo/allH5Files/*.h5"
+filename: "(ON|CO)_<YYYYMMDD culture date>_<MW plate>_DIV<NN>_<..>.h5"   # ON ontogeny, CO control plates
+h5: {spikes: spikes, counts_per_channel: sCount, channel_names: names, channel_name: "<well>_<electrode>", time_unit: s}
+hierarchy: {prep: culture_date, plate: "<culture_date>_<MW plate>", well: "<plate>:<well>", timepoint: DIV}
+prep_id_corrections: {"20130528": "20140528"}   # MW1007-101 DIV2 only; DIV5-16 of the same plate are filed under 20140528 (paper: 15 dates)
+species: rat
+region: cortex
+electrodes_per_well: 16
+wells: {rows: [A, B, C, D, E, F], cols: [1, 2, 3, 4, 5, 6, 7, 8]}   # every well of every plate is recorded; silent wells kept
+treatment_rule: "all wells control (h5 treatment == control, dose 0 in 106 of 107 files; 1 file lacks the field, same plate series)"
+verified: {files: 107, culture_dates: 15, plates: 16, div_values: [2, 5, 7, 9, 12, 13, 14, 16, 19, 20, 21, 23, 26, 27, 28, 30, 33, 35, 37]}
+duplicate_rule: "more than one file for the same (plate, DIV) (20131113_MW1007-51 DIV26: _001, _002): keep the first by filename"

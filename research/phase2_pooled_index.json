@@ -1,0 +1,270 @@
+{
+ "index_sha256": "3c9af42f673976e13e7b791e01d674e3d66a99a8814f55700d9844b8d053510a",
+ "dev_confirmatory_sha256": "077001ae6d9eef2f94e4584970516421e2b9643794ed7d6c97e71f4e97c67db8",
+ "overlap_stratum_div": [
+  7,
+  12
+ ],
+ "rows": [
+  {
+   "role": "dev",
+   "lab": "eglen_grant",
+   "sources": [
+    "g2chvc"
+   ],
+   "species": [
+    "mouse"
+   ],
+   "regions": [
+    "cortex",
+    "hippocampus"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 22,
+   "plates": 90,
+   "recordings": 518,
+   "recordings_qc": 518,
+   "qc_measured": true,
+   "div_min": 7,
+   "div_max": 29,
+   "div_values": [
+    7,
+    9,
+    10,
+    11,
+    13,
+    14,
+    15,
+    17,
+    18,
+    19,
+    20,
+    21,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "preps_with_div_7_12": 22,
+   "recordings_div_7_12": 172
+  },
+  {
+   "role": "dev",
+   "lab": "epa_shafer",
+   "sources": [
+    "epa_mi",
+    "epameadev"
+   ],
+   "species": [
+    "rat"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 16,
+   "plates": 20,
+   "recordings": 5328,
+   "recordings_qc": 5040,
+   "qc_measured": true,
+   "div_min": 2,
+   "div_max": 37,
+   "div_values": [
+    2,
+    5,
+    7,
+    9,
+    12,
+    13,
+    14,
+    16,
+    19,
+    20,
+    21,
+    23,
+    26,
+    28,
+    30,
+    33,
+    35,
+    37
+   ],
+   "preps_with_div_7_12": 16,
+   "recordings_div_7_12": 2400
+  },
+  {
+   "role": "dev",
+   "lab": "giugliano",
+   "sources": [
+    "fragilex"
+   ],
+   "species": [
+    "mouse"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "fmr1_ko",
+    "wt"
+   ],
+   "preps": 10,
+   "plates": 57,
+   "recordings": 264,
+   "recordings_qc": 264,
+   "qc_measured": true,
+   "div_min": 7,
+   "div_max": 35,
+   "div_values": [
+    7,
+    9,
+    11,
+    13,
+    14,
+    16,
+    21,
+    22,
+    24,
+    28,
+    35
+   ],
+   "preps_with_div_7_12": 10,
+   "recordings_div_7_12": 96
+  },
+  {
+   "role": "dev",
+   "lab": "potter_gatech",
+   "sources": [
+    "potter"
+   ],
+   "species": [
+    "rat"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 8,
+   "plates": 30,
+   "recordings": 527,
+   "recordings_qc": 521,
+   "qc_measured": true,
+   "div_min": 3,
+   "div_max": 39,
+   "div_values": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    39
+   ],
+   "preps_with_div_7_12": 8,
+   "recordings_div_7_12": 118
+  },
+  {
+   "role": "confirmatory",
+   "lab": "epa_shafer",
+   "sources": [
+    "nfa"
+   ],
+   "species": [
+    "rat"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 17,
+   "plates": 96,
+   "recordings": 2141,
+   "recordings_qc": 2141,
+   "qc_measured": false,
+   "div_min": 5,
+   "div_max": 12,
+   "div_values": [
+    5,
+    7,
+    9,
+    12
+   ],
+   "preps_with_div_7_12": 17,
+   "recordings_div_7_12": 1607
+  },
+  {
+   "role": "confirmatory",
+   "lab": "kapucu_tuni",
+   "sources": [
+    "kapucu_rat"
+   ],
+   "species": [
+    "rat"
+   ],
+   "regions": [
+    "cortex"
+   ],
+   "genotypes": [
+    "wt"
+   ],
+   "preps": 3,
+   "plates": 3,
+   "recordings": 192,
+   "recordings_qc": 192,
+   "qc_measured": false,
+   "div_min": 2,
+   "div_max": 35,
+   "div_values": [
+    2,
+    7,
+    10,
+    14,
+    17,
+    21,
+    24,
+    28,
+    31,
+    35
+   ],
+   "preps_with_div_7_12": 1,
+   "recordings_div_7_12": 24
+  }
+ ]
+}

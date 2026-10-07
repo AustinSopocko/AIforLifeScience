@@ -5,6 +5,9 @@ INVARIANT-1  No culture prep (Potter: dissection batch; Kapucu: culture-date tok
              partition. Transforms and model parameters are fit on train preps only.
 INVARIANT-2  NFA treated recordings (dose > 0) never enter age training.
 INVARIANT-3  NFA lockbox preps are read only by a run with Seal #2 on a clean tree.
+INVARIANT-4  (Phase 2) Confirmatory clusters (splits/dev_confirmatory.json: all NFA + Kapucu rat) are read only by the
+             single confirmatory run under Seal 2 on a clean tree. Pooled splits are by cluster_id = "<lab>:<prep>";
+             a leave-one-lab-out test fold holds exactly one lab, absent from its train fold.
 
 Enforcement contract
 --------------------
@@ -30,13 +33,18 @@ class SplitPurpose(Enum):
     LOCKBOX = "lockbox"                        # NFA: TC dev vs NTP-only lockbox
     FEWSHOT = "fewshot"                        # Kapucu rat leave-one-prep-out; labelled pool = train-fold preps
     IDENTITY_PROBE = "identity_probe"          # sole exception: C2 cultures-within-batch, C1 wells-within-plate
+    DEV_CONFIRMATORY = "dev_confirmatory"      # Phase 2: pooled clusters -> dev (tuning) vs confirmatory (one run, Seal 2)
+    LEAVE_ONE_LAB_OUT = "leave_one_lab_out"    # Phase 2 primary dev evaluation: one fold per dev lab
 
 
 def assert_group_disjoint(manifest, index) -> None:
     if manifest.purpose is SplitPurpose.IDENTITY_PROBE:
         require_purpose_caller(manifest.purpose)
         return
-    known = set(index.table[index.table.source == manifest.source].prep_id)
+    if manifest.unit == "cluster":
+        known = set(index.table.cluster_id)
+    else:
+        known = set(index.table[index.table.source == manifest.source].prep_id)
     parts = list(manifest.partitions.values())
     for i in range(len(parts)):
         for j in range(i + 1, len(parts)):
@@ -53,6 +61,12 @@ def assert_group_disjoint(manifest, index) -> None:
             tests += d["test"]
         if sorted(tests) != sorted(allp) or len(tests) != len(set(tests)):
             raise InvariantViolation(f"{manifest.name}: fold test sets do not partition the preps")
+    if manifest.purpose is SplitPurpose.LEAVE_ONE_LAB_OUT:
+        lab = dict(zip(index.table.cluster_id, index.table.lab))
+        for f, d in manifest.folds.items():
+            test_labs, train_labs = {lab[c] for c in d["test"]}, {lab[c] for c in d["train"]}
+            if len(test_labs) != 1 or test_labs & train_labs:
+                raise InvariantViolation(f"{manifest.name}/{f}: test fold must be exactly one lab absent from train")
 
 
 def assert_controls_only(index_subset) -> None:

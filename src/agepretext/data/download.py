@@ -10,11 +10,18 @@ Contract
   existing file with a matching hash is not re-downloaded.
 - `write_manifest(source, dest)` records "<sha256>  <bytes>  <relpath>" lines, sorted by relpath.
 - Kapucu raw *.h5 is forbidden. CITE-ONLY sources are fetched from origin only (no mirrors).
+- Phase 2 bundles (`fetch_bundle(source, cfg, dest)`; cfg["fetch"]["kind"] in {git, zip}): git sources are cloned at
+  the pinned commit (optionally sparse); zip sources are downloaded, extracted (each archive into its own directory,
+  nested archives included) and never executed. `bundle_files(source, cfg, dest)` lists the manifest set: every
+  file the loader can read plus the archives. Afterwards every manifest line must match (ChecksumMismatch otherwise).
 """
 import hashlib
 import os
+import glob
 import re
+import subprocess
 import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
 MANIFEST_DIR = "data/manifests"
@@ -105,3 +112,60 @@ def write_manifest(source: str, dest: str, rels: list[str]) -> str:
             p = os.path.join(dest, rel)
             f.write(f"{_sha256(p)}  {os.path.getsize(p)}  {rel}\n")
     return path
+
+
+BUNDLE_GLOBS = {
+    "epameadev": ["repo/allH5Files/*.h5"],
+    "g2chvc": ["repo/inst/extdata/*.h5"],
+    "fragilex": ["MEA_experiments.zip", "readme.txt", "extracted/MEA_experiments/*/CultureSession*/MEA_*/*_spikes.mat"],
+    "epa_mi": ["Mutual Information Data and Scripts.zip", "spikelists/*/*_spike_list.csv"],
+}
+
+
+def bundle_files(source: str, cfg: dict, dest: str) -> list[str]:
+    rels = {os.path.relpath(p, dest) for g in BUNDLE_GLOBS[source] for p in glob.glob(os.path.join(dest, g))}
+    return sorted(r for r in rels if "__MACOSX" not in r)
+
+
+def _download(url: str, path: str) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with urllib.request.urlopen(url, timeout=900) as r, open(path + ".part", "wb") as f:
+        for chunk in iter(lambda: r.read(1 << 20), b""):
+            f.write(chunk)
+    os.replace(path + ".part", path)
+
+
+def fetch_bundle(source: str, cfg: dict, dest: str) -> list[str]:
+    fc = cfg["fetch"]
+    os.makedirs(dest, exist_ok=True)
+    if fc["kind"] == "git":
+        repo = os.path.join(dest, "repo")
+        if not os.path.isdir(repo):
+            sparse = ["--sparse"] if fc.get("sparse") else []
+            subprocess.run(["git", "clone", "-q", "--filter=blob:none", *sparse, fc["url"], repo], check=True)
+            if fc.get("sparse"):
+                subprocess.run(["git", "-C", repo, "sparse-checkout", "set", *fc["sparse"]], check=True)
+        subprocess.run(["git", "-C", repo, "checkout", "-q", fc["commit"]], check=True)
+    elif fc["kind"] == "zip":
+        arc = os.path.join(dest, fc["archive"])
+        if not os.path.exists(arc):
+            _download(fc["url"], arc)
+        for name, url in fc.get("extra", {}).items():
+            if not os.path.exists(os.path.join(dest, name)):
+                _download(url, os.path.join(dest, name))
+        if not os.path.isdir(os.path.join(dest, fc["extract_to"])):
+            zipfile.ZipFile(arc).extractall(os.path.join(dest, fc["extract_to"]))
+        inner = fc.get("inner")
+        if inner and not os.path.isdir(os.path.join(dest, inner["extract_to"])):
+            zipfile.ZipFile(os.path.join(dest, inner["archive"])).extractall(os.path.join(dest, inner["extract_to"]))
+    else:
+        raise KeyError(fc["kind"])
+    rels = bundle_files(source, cfg, dest)
+    expected = read_manifest(source)
+    if expected:
+        if set(expected) != set(rels):
+            raise ChecksumMismatch(f"{source}: file set differs from manifest")
+        for r in rels:
+            if _sha256(os.path.join(dest, r)) != expected[r][0]:
+                raise ChecksumMismatch(f"{source}: {r}")
+    return rels
