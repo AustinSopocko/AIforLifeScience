@@ -1,0 +1,56 @@
+{
+ "clusters_now": 8,
+ "rows": [
+  {
+   "C": 8,
+   "halfwidth_enc": 0.0576,
+   "halfwidth_paired_diff": 0.0442,
+   "rule_passes_if_effect_holds": false,
+   "paired_excludes_zero": false
+  },
+  {
+   "C": 16,
+   "halfwidth_enc": 0.0407,
+   "halfwidth_paired_diff": 0.0312,
+   "rule_passes_if_effect_holds": false,
+   "paired_excludes_zero": false
+  },
+  {
+   "C": 25,
+   "halfwidth_enc": 0.0326,
+   "halfwidth_paired_diff": 0.025,
+   "rule_passes_if_effect_holds": false,
+   "paired_excludes_zero": false
+  },
+  {
+   "C": 40,
+   "halfwidth_enc": 0.0257,
+   "halfwidth_paired_diff": 0.0198,
+   "rule_passes_if_effect_holds": false,
+   "paired_excludes_zero": false
+  },
+  {
+   "C": 60,
+   "halfwidth_enc": 0.021,
+   "halfwidth_paired_diff": 0.0161,
+   "rule_passes_if_effect_holds": false,
+   "paired_excludes_zero": true
+  },
+  {
+   "C": 100,
+   "halfwidth_enc": 0.0163,
+   "halfwidth_paired_diff": 0.0125,
+   "rule_passes_if_effect_holds": true,
+   "paired_excludes_zero": true
+  },
+  {
+   "C": 150,
+   "halfwidth_enc": 0.0133,
+   "halfwidth_paired_diff": 0.0102,
+   "rule_passes_if_effect_holds": true,
+   "paired_excludes_zero": true
+  }
+ ],
+ "clusters_needed_s_enc": 99,
+ "clusters_needed_s_diff": 59
+}
