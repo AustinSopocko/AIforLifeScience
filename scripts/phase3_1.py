@@ -174,7 +174,8 @@ def inject(recs, positive: set, rate_hz: float, seed: int):
 def stage_canary(recs, meta):
     rate = stratum_rate(recs)
     clusters = meta.drop_duplicates("cluster_id")[["cluster_id", "lab"]].sort_values("cluster_id")
-    for s in range(E["canary"]["seeds"]):
+    lo, hi = map(int, os.environ.get("CANARY_SEEDS", f"0-{E['canary']['seeds'] - 1}").split("-"))   # resumable chunks
+    for s in range(lo, hi + 1):
         path = f"{OUT}/canary_{s:02d}.json"
         if os.path.exists(path):
             continue
