@@ -1,4 +1,4 @@
-# Phase 3.0: EPA imbalance — training sampling scheme (PROPOSAL; not implemented, nothing fitted)
+# Phase 3.0: EPA imbalance — training sampling scheme (DECIDED: option A, frozen by ledger row before any fit)
 
 This scheme is frozen at Seal 3 (`configs/train/*.yaml`). It needs an operator decision before the first Phase 3 fit.
 
@@ -87,3 +87,14 @@ decision.
 **Interaction to note for the architecture work, not part of this decision.** EPA windows carry 16 electrodes and MCS
 windows carry 59–60. The trainer's existing electrode-subset augmentation (subsets of 16 up to E) already exposes the
 encoder to 16-electrode views of MCS data.
+
+## Decision (operator, 2026-10-08)
+
+**Option A**, frozen in `configs/train/sampling.yaml` by ledger row before any Phase 3 fit. Recorded reasoning: prep is
+the unit that the splits, the bootstrap and the scoring already treat as independent, so training and evaluation
+agree, and A adds no free parameter.
+
+**What the B sensitivity run tests.** Under A the lab shares are eglen 48 / EPA 35 / Potter 17. Potter is the only lab
+with near-daily DIV 3–39 coverage, and it contributes least. Option B runs once on the final architecture as a
+pre-declared sensitivity check that decides nothing. It tests whether giving Potter a third of training changes the
+result.

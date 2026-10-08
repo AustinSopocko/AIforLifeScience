@@ -1,0 +1,14 @@
+# Phase 3.0 training sampling scheme: OPTION A (operator decision 2026-10-08), frozen by ledger row before any Phase 3 fit;
+# sealed at Seal 3 (configs/train/*.yaml is an architecture path). research/PHASE3_SAMPLING_PROPOSAL.md has the options.
+scheme: cluster_equal_div_stratified
+draw: "per epoch, every training cluster contributes m windows; each draw: DIV uniform over the cluster's DIVs -> recording uniform at that DIV -> window uniform"
+resample_every_epoch: true
+m_windows_per_cluster_per_epoch: null   # compute knob only; set by the Phase 3 timing gate, ledgered before the fit that uses it
+lab_shares_full_dev: {eglen_grant: 0.478, epa_shafer: 0.348, potter_gatech: 0.174}
+reasoning: "prep is the unit the splits, bootstrap and scoring already treat as independent, so training and evaluation agree; A adds no free parameter"
+sensitivity:
+  scheme: B_lab_equal_then_cluster_equal
+  runs: 1
+  on: final_architecture
+  decides: nothing
+  tests: "under A, Potter (the only lab with near-daily DIV 3-39 coverage) contributes least (17%); B gives it 33%"
