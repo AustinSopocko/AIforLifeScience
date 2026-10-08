@@ -269,4 +269,36 @@ model is cross-fit inside NFA with every setting fixed here.
 
 ## Amendments
 
-_None._
+### A1 (2026-10-08): data-integrity exclusion of 6 truncated Potter files
+
+This is operator item P2. It is a **data-integrity** exclusion, separate from the F1 length rule. It is recorded in
+`configs/data/integrity_exclusions.yaml` and in the ledger (`amendment_a1_integrity_exclusion`), and it is sealed at
+Seal 3.
+
+**Rule.** A file with no recorded length is truncated iff both:
+- its last spike falls before 0.25 × the median last-spike time of the same culture or plate's recordings within ±5 DIV;
+- its spike rate up to that point is ≥ 0.25 × those recordings' median rate, so it is active, not silent.
+
+**Recordings flagged.** Scanning all 633 dev units with no recorded length flags exactly 6 Potter recordings.
+
+| Recording | DIV | Last spike (s) | Rate (Hz) | Neighbours: median length (s) / median rate (Hz) |
+|---|---|---|---|---|
+| 2-1-3 | 3 | 369 | 10.2 | 2,713 / 8.2 |
+| 2-3-18 | 18 | 95 | 498.3 | 2,714 / 253.4 |
+| 2-4-34 | 34 | 13 | 514.4 | 2,700 / 325.4 |
+| 2-5-9 | 9 | 22 | 212.5 | 2,700 / 117.2 |
+| 3-5-13 | 13 | 127 | 242.6 | 1,809 / 74.5 |
+| 6-2-13 | 13 | 25 | 107.4 | 1,808 / 121.8 |
+
+All 6 are intact bz2 streams ending on a complete line, so they were truncated at recording or export, not in
+transfer. Neither the files nor the dataset index state a length.
+
+**Checked and not flagged:**
+- The 3 EPAmeadev DIV-2 plates are silent (0.0–0.1 Hz across the plate), so F1 keeps them.
+- The 3 short mature 20131113 plates match their own plates' 522–727 s recordings at neighbouring DIVs. That is a
+  shorter protocol, not truncation.
+
+**Effect on F2.** The sealed F2 calibration included the 6 files. Re-scoring without them leaves the mcs_8x8 selection
+unchanged (0.2991 → 0.2992).
+
+**Confirmatory corpora.** The same rule is applied to Fragile-X and Kapucu inside the confirmatory run only.

@@ -117,7 +117,7 @@
    "preps": 8,
    "plates": 30,
    "recordings": 527,
-   "recordings_qc": 527,
+   "recordings_qc": 521,
    "qc_measured": true,
    "div_min": 3,
    "div_max": 39,
@@ -158,7 +158,7 @@
     39
    ],
    "preps_with_div_7_12": 8,
-   "recordings_div_7_12": 119
+   "recordings_div_7_12": 118
   },
   {
    "role": "confirmatory",

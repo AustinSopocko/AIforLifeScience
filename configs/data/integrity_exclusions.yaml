@@ -1,0 +1,18 @@
+# Amendment A1 to Seal 2 (2026-10-08): DATA INTEGRITY exclusions, distinct from the F1 length rule (configs/data/qc.yaml).
+# A file is truncated iff it has no recorded length AND its last spike < 0.25 x the median last-spike time of the same
+# culture/plate's recordings within +-5 DIV AND its observed spike rate >= 0.25 x their median rate (active, not silent).
+# Scanned on every dev last-spike unit (527 Potter recordings + 106 EPAmeadev plate files): exactly these 6 flagged.
+# Files are intact bz2 streams ending on a complete line: truncation happened at recording/export, not in transfer.
+rule: {last_spike_vs_neighbour_median: 0.25, rate_vs_neighbour_median: 0.25, neighbour_window_div: 5}
+excluded:
+  "03001918f6712a3e": {source: potter, file: 2-1-3.spk.txt.bz2,  div: 3,  last_spike_s: 369.3, neighbour_median_s: 2713, rate_hz: 10.2,  neighbour_rate_hz: 8.2}
+  "066dbc3e1a70ba9d": {source: potter, file: 2-3-18.spk.txt.bz2, div: 18, last_spike_s: 94.5,  neighbour_median_s: 2714, rate_hz: 498.3, neighbour_rate_hz: 253.4}
+  "70c40169d8bf3d04": {source: potter, file: 2-4-34.spk.txt.bz2, div: 34, last_spike_s: 12.5,  neighbour_median_s: 2700, rate_hz: 514.4, neighbour_rate_hz: 325.4}
+  "2a1fefee0712ae86": {source: potter, file: 2-5-9.spk.txt.bz2,  div: 9,  last_spike_s: 21.7,  neighbour_median_s: 2700, rate_hz: 212.5, neighbour_rate_hz: 117.2}
+  "207f49b9d8194235": {source: potter, file: 3-5-13.spk.txt.bz2, div: 13, last_spike_s: 127.3, neighbour_median_s: 1809, rate_hz: 242.6, neighbour_rate_hz: 74.5}
+  "0b66c08f62465212": {source: potter, file: 6-2-13.spk.txt.bz2, div: 13, last_spike_s: 25.2,  neighbour_median_s: 1808, rate_hz: 107.4, neighbour_rate_hz: 121.8}
+not_flagged_checked:
+  epameadev_div2_silent_plates: "20140212_MW1007-51, 20140319_MW1007-25, 20140507_MW1007-103: plate rate 0.0-0.1 Hz -> silent, kept (F1)"
+  epameadev_20131113_short_plates: "MW1007-51 DIV27 (592 s), MW1007-53 DIV26/27 (473/522 s): same plates record 522-727 s at neighbouring DIVs -> shorter protocol, not truncation; >= 3 full windows each, kept"
+confirmatory_sources: "Fragile-X and Kapucu are scanned with the same rule inside the confirmatory run only (no confirmatory file opened now)"
+f2_effect: "sealed F2 calibration included these 6; re-scoring the cached features without them leaves the mcs_8x8 selection unchanged (OOF MAE 0.2991 -> 0.2992)"

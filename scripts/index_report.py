@@ -1,10 +1,10 @@
 """Phase 2: pooled RecordingIndex summary per lab and role -> research/phase2_pooled_index.json (+ printed table).
-Metadata only (counts, DIV values, recording length); no activity values. QC = data.qc.length_qc (F1).
+Metadata only (counts, DIV values, recording length); no activity values. QC = Amendment A1 integrity exclusions, then data.qc.length_qc (F1).
 Fragile-X rows are split by genotype (WT = H-AGE-FX, KO = H-B2)."""
 import json
 import pandas as pd
 from agepretext.data.index import RecordingIndex
-from agepretext.data.qc import length_qc
+from agepretext.data.qc import integrity_excluded, length_qc
 from agepretext.data.splits import SplitManifest
 
 idx = RecordingIndex.load(); t = idx.table.copy()
@@ -13,6 +13,7 @@ role = {c: r for r, cs in dc.partitions.items() for c in cs}
 t["role"] = t.cluster_id.map(role)
 t = t[t.is_control]                                   # treated NFA wells are Claim-B material, not age-pretext data
 t["qc_ok"] = [length_qc(a, b)[0] for a, b in zip(t.duration_s, t.duration_source)]
+t["qc_ok"] &= ~t.recording_id.isin(set(integrity_excluded()))          # Amendment A1
 t["group"] = t.lab.where(t.source != "fragilex", t.lab + "_" + t.genotype)
 OV = (7, 12)
 out = []

@@ -67,17 +67,34 @@ def test_b2_requires_detection_and_paired_lower_bound():
     assert verdict("H-B2", {"paired": {**both, "BL-B2g": B(0.1, -0.1, 0.3, 10, 4000)}, "null_p": 0.01}, pre).label == "REFUTES"
 
 
-def test_seal_policy_allows_only_architecture_changes():
+def test_seal_policy_allows_only_architecture_changes_and_ledgered_amendments():
     from agepretext.validation.protocol import SealRecord, check_seal_policy
     s1 = SealRecord("seal-1", "h1", "p", "c", "t", {})
-    s2 = SealRecord("seal-2", "h2", "p", "c", "t", {"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "b"})
-    check_seal_policy({"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "B2",
-                       "configs/train/sampling.yaml": "n"}, [s1, s2])
-    with pytest.raises(RuntimeError):
-        check_seal_policy({"protocol/prereg.yaml": "CHANGED", "configs/model/set_encoder.yaml": "b"}, [s1, s2])
-    with pytest.raises(RuntimeError):
-        check_seal_policy({"protocol/prereg.yaml": "a", "configs/model/set_encoder.yaml": "b",
-                           "splits/new.json": "x"}, [s1, s2])
+    s2 = SealRecord("seal-2", "h2", "p", "c2", "t", {"protocol/prereg.yaml": "a", "PREREGISTRATION.md": "m",
+                                                      "configs/model/set_encoder.yaml": "b", "configs/data/x.yaml": "x"})
+    pre0 = "seal_policy: {architecture_paths: [configs/model/set_encoder.yaml, configs/train/*.yaml]}\nh: 1\namendments: []\n"
+    prose0 = "# P\ntext\n## Amendments\n_None._\n"
+    show = lambda c, p: {"protocol/prereg.yaml": pre0, "PREREGISTRATION.md": prose0}[p]
+    base = {"protocol/prereg.yaml": "a", "PREREGISTRATION.md": "m", "configs/data/x.yaml": "x"}
+    kw = dict(prereg_text=pre0, prose_text=prose0, show=show, ledger_metrics=set())
+    check_seal_policy({**base, "configs/model/set_encoder.yaml": "B2", "configs/train/s.yaml": "n"}, [s1, s2], **kw)
+    with pytest.raises(RuntimeError):                                  # data config changed without amendment
+        check_seal_policy({**base, "configs/data/x.yaml": "X", "configs/model/set_encoder.yaml": "b"}, [s1, s2], **kw)
+    with pytest.raises(RuntimeError):                                  # new split outside architecture paths
+        check_seal_policy({**base, "configs/model/set_encoder.yaml": "b", "splits/new.json": "x"}, [s1, s2], **kw)
+    pre1 = pre0.replace("amendments: []", "amendments: [{id: A1, date: d, ledger_metric: amend_a1, components: [configs/data/ex.yaml]}]")
+    prose1 = prose0.replace("_None._", "### A1 ...")
+    comp = {**base, "PREREGISTRATION.md": "m2", "protocol/prereg.yaml": "a2", "configs/model/set_encoder.yaml": "b",
+            "configs/data/ex.yaml": "e"}
+    check_seal_policy(comp, [s1, s2], prereg_text=pre1, prose_text=prose1, show=show, ledger_metrics={"amend_a1"})
+    with pytest.raises(RuntimeError):                                  # amendment without its ledger row
+        check_seal_policy(comp, [s1, s2], prereg_text=pre1, prose_text=prose1, show=show, ledger_metrics=set())
+    with pytest.raises(RuntimeError):                                  # prereg edited outside `amendments`
+        check_seal_policy(comp, [s1, s2], prereg_text=pre1.replace("h: 1", "h: 2"), prose_text=prose1, show=show,
+                          ledger_metrics={"amend_a1"})
+    with pytest.raises(RuntimeError):                                  # prose edited before the Amendments heading
+        check_seal_policy(comp, [s1, s2], prereg_text=pre1, prose_text=prose1.replace("text", "TEXT"), show=show,
+                          ledger_metrics={"amend_a1"})
 
 
 def test_seal1_components_verifiable_by_content():

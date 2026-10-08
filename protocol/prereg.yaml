@@ -208,4 +208,11 @@ baselines:
   BL-B2:    {type: best_single_raw_feature_deviation, selection: training_preps_of_each_crossfit_fold}
   BL-B3:    {type: mahalanobis_deviation, covariance: ledoit_wolf, gating: false}
 
-amendments: []
+amendments:
+  - id: A1
+    date: "2026-10-08"
+    title: "data-integrity exclusion of 6 truncated Potter files (operator item P2)"
+    ledger_metric: amendment_a1_integrity_exclusion
+    components: [configs/data/integrity_exclusions.yaml]
+    effect: "6 Potter recordings (DIV 3, 9, 13, 13, 18, 34) excluded from every Phase 2+ analysis before F1 length QC; the same rule scans Fragile-X and Kapucu inside the confirmatory run"
+    sealed_at: seal-3

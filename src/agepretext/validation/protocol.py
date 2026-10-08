@@ -12,8 +12,8 @@ Every run records the frozen hash AND its git commit.
   protocol/seals/seal-N.json {seal_id, protocol_hash, prereg_sha256, git_commit, created_utc, components} and tags
   `seal-N-<hash8>`.
 - Seal policy (prereg v5 `seal_policy`): `check_seal_policy(comp)` — for seal N >= 3, every Seal-2 component outside
-  `architecture_paths` must be present and unchanged, and every new component must lie inside them; seal() refuses
-  otherwise. Seal 3 is the architecture freeze; Seal 2 is the evaluation protocol.
+  `architecture_paths` must be present and unchanged unless a ledgered dated amendment names it, and every new
+  component must lie inside them or be named by an amendment; seal() refuses otherwise. Seal 3 is the architecture freeze; Seal 2 is the evaluation protocol.
 - `matching_seal(hash)` returns the SealRecord with that protocol_hash, or None.
 """
 import datetime
@@ -84,17 +84,48 @@ def matching_seal(protocol_hash: str) -> SealRecord | None:
     return next((s for s in seals() if s.protocol_hash == protocol_hash), None)
 
 
-def check_seal_policy(comp: dict, existing: list | None = None) -> None:
+def _git_show(commit: str, path: str) -> str:
+    return subprocess.run(["git", "show", f"{commit}:{path}"], capture_output=True, text=True, check=True).stdout
+
+
+def _ledger_metrics(path: str = "ledger/results.jsonl") -> set:
+    return {json.loads(l)["metric"] for l in open(path) if l.strip()}
+
+
+def check_seal_policy(comp: dict, existing: list | None = None, *, prereg_text: str | None = None,
+                      prose_text: str | None = None, show=None, ledger_metrics: set | None = None) -> None:
+    """Seal N >= 3 vs Seal 2: outside architecture_paths, a component may change or be added only through a dated
+    amendment (prereg `amendments`: id, date, ledger_metric, components). prereg.yaml may differ from its Seal-2 text
+    only in `amendments`; PREREGISTRATION.md only after its "## Amendments" heading; each amendment needs its ledger row."""
     existing = seals() if existing is None else existing
     if len(existing) < 2:
         return
     s2 = next(s for s in existing if s.seal_id == "seal-2")
-    arch = yaml.safe_load(open("protocol/prereg.yaml"))["seal_policy"]["architecture_paths"]
+    show = show or _git_show
+    prereg_text = open("protocol/prereg.yaml").read() if prereg_text is None else prereg_text
+    prose_text = open("PREREGISTRATION.md").read() if prose_text is None else prose_text
+    pre = yaml.safe_load(prereg_text)
+    arch = pre["seal_policy"]["architecture_paths"]
+    amends = pre.get("amendments") or []
     is_arch = lambda p: any(fnmatch.fnmatch(p, g) for g in arch)
-    bad = [p for p, h in s2.components.items() if not is_arch(p) and comp.get(p) != h]
-    bad += [p for p in comp if p not in s2.components and not is_arch(p)]
+    allowed = {c for a in amends for c in a["components"]}
+    old = yaml.safe_load(show(s2.git_commit, "protocol/prereg.yaml"))
+    strip = lambda d: {k: v for k, v in d.items() if k != "amendments"}
+    if strip(pre) != strip(old):
+        raise RuntimeError("seal policy: protocol/prereg.yaml changed outside `amendments`")
+    head = "## Amendments"
+    if prose_text.split(head)[0] != show(s2.git_commit, "PREREGISTRATION.md").split(head)[0]:
+        raise RuntimeError("seal policy: PREREGISTRATION.md changed before its Amendments section")
+    allowed |= {"protocol/prereg.yaml", "PREREGISTRATION.md"}
+    metrics = _ledger_metrics() if ledger_metrics is None else ledger_metrics
+    missing = [a["id"] for a in amends if a["ledger_metric"] not in metrics]
+    if missing:
+        raise RuntimeError(f"seal policy: amendments without a ledger row: {missing}")
+    ok = lambda p: is_arch(p) or p in allowed
+    bad = [p for p, h in s2.components.items() if not ok(p) and comp.get(p) != h]
+    bad += [p for p in comp if p not in s2.components and not ok(p)]
     if bad:
-        raise RuntimeError(f"seal policy: Seal-2 components changed/added outside architecture_paths: {sorted(bad)}")
+        raise RuntimeError(f"seal policy: Seal-2 components changed/added outside architecture_paths and amendments: {sorted(bad)}")
 
 
 def seal(profile: str | None = None) -> SealRecord:
