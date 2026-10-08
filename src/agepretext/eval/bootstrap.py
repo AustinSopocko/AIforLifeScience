@@ -89,3 +89,27 @@ def cluster_weighted_mae(df, pred_col: str, *, true_col: str = "y_true_log_div",
         return float(per_cluster.mean())
     lab = df.groupby(cluster_col)[strata_col].first()
     return float(per_cluster.groupby(lab).mean().mean())
+
+
+def paired_cluster_mae_bootstrap(df, pred_a: str, pred_b: str, *, true_col: str = "y_true_log_div",
+                                 cluster_col: str = "cluster_id", strata_col: str | None = None, n_resamples: int = 4000,
+                                 ci: float = 0.95, seed: int = 0, min_clusters: int = 5) -> BootstrapResult:
+    """Exact fast path of paired_cluster_bootstrap for stat = cluster_weighted_mae (lab-equal with strata_col): the
+    statistic is linear in per-cluster mean |error|, so each resample is a mean over drawn clusters. Draw order is
+    identical to paired_cluster_bootstrap (strata sorted, clusters sorted within stratum), so results match exactly."""
+    import numpy as np
+    e = df.assign(_a=(df[pred_a] - df[true_col]).abs(), _b=(df[pred_b] - df[true_col]).abs())
+    per = e.groupby(cluster_col).agg(a=("_a", "mean"), b=("_b", "mean"),
+                                     s=(strata_col, "first") if strata_col else ("_a", lambda x: 0))
+    per["d"] = per.a - per.b
+    strata = {s_: sorted(g.index) for s_, g in per.groupby("s")} if strata_col else {None: sorted(per.index)}
+    if min(len(v) for v in strata.values()) < min_clusters:
+        raise TooFewClusters(f"{ {s_: len(v) for s_, v in strata.items()} } clusters < {min_clusters} in some stratum")
+    dv = {s_: per.loc[k, "d"].to_numpy() for s_, k in strata.items()}
+    rng = np.random.default_rng(seed)
+    stats = np.empty(n_resamples)
+    for r in range(n_resamples):
+        stats[r] = np.mean([dv[s_][rng.integers(0, len(dv[s_]), len(dv[s_]))].mean() for s_ in strata])
+    point = float(np.mean([v.mean() for v in dv.values()]))
+    a = (1 - ci) / 2
+    return BootstrapResult(point, float(np.quantile(stats, a)), float(np.quantile(stats, 1 - a)), len(per), n_resamples)

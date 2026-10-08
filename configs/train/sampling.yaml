@@ -3,7 +3,7 @@
 scheme: cluster_equal_div_stratified
 draw: "per epoch, every training cluster contributes m windows; each draw: DIV uniform over the cluster's DIVs -> recording uniform at that DIV -> window uniform"
 resample_every_epoch: true
-m_windows_per_cluster_per_epoch: null   # compute knob only; set by the Phase 3 timing gate, ledgered before the fit that uses it
+m_windows_per_cluster_per_epoch: 128     # Phase 3.1 timing gate (ledgered): ~= Seal-1 per-prep exposure (1054 windows / 8 preps = 132 per epoch)
 lab_shares_full_dev: {eglen_grant: 0.478, epa_shafer: 0.348, potter_gatech: 0.174}
 reasoning: "prep is the unit the splits, bootstrap and scoring already treat as independent, so training and evaluation agree; A adds no free parameter"
 sensitivity:

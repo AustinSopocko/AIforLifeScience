@@ -3,12 +3,11 @@
 name: set_encoder
 input: {bin_ms: 400, window_s: 120, population_rate_channel: true, windows_per_recording_per_epoch: 2}
 electrode_encoder: {type: dilated_cnn1d, channels: [8, 16, 16], kernel: 5, dilations: [1, 4, 16]}
-pooling: [mean, attention_pma_1seed]     # Phase 3.1 (Seal 1: [attention_pma_1seed, mean, max]); max dropped: N-biased (16 vs 59/60 electrodes)
-electrode_set: nominal_platform_layout_silent_as_zero   # Phase 3.1: Axion 16, Potter 59, Charlesworth 60; no positions
+pooling: [attention_pma_1seed, mean, max]
 embedding_dim: 32
 augment: {electrode_subsample_min: 16, electrode_subsample_max: all}
 use_electrode_coordinates: false
-age_head: linear                # single head (as trained at Seal 1); a per-species head would be a species/lab shortcut
+age_head: linear_per_species
 ensemble: {members: 1, bagging_unit: batch}   # cut 4
 g_time:                       # D8: real data, before Seal #1
   measure: one_forward_backward_on_one_potter_culture_all_recordings

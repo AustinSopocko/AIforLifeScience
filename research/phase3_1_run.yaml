@@ -1,0 +1,10 @@
+# Phase 3.1 dev run parameters (exploratory; ledgered before the run). Not a protocol component.
+threads: 4
+seeds: {lolo: 31000, final: 32000, canary: 33000}       # lolo fold f (folds sorted by lab name) uses lolo + f; canary seed s uses canary + s
+probe: {n_perm: 1000}                                    # H-LAB spec: multinomial logistic, inner 3-fold grouped CV over C {0.01,0.1,1,10}, outer 4 folds by cluster stratified by lab
+canary:                                                  # pseudo-lab operationalisation (see ledger row): label = canary-positive half of each lab's clusters
+  seeds: 20
+  electrode_fraction: 0.10
+  detection_alpha: 0.05
+  required_power: 0.8
+gating: "encoder must beat BOTH implementations of each baseline (scheme-A weighted and unweighted fits)"
