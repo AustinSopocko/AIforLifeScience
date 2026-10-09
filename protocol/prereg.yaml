@@ -216,3 +216,10 @@ amendments:
     components: [configs/data/integrity_exclusions.yaml]
     effect: "6 Potter recordings (DIV 3, 9, 13, 13, 18, 34) excluded from every Phase 2+ analysis before F1 length QC; the same rule scans Fragile-X and Kapucu inside the confirmatory run"
     sealed_at: seal-3
+  - id: A2
+    date: "2026-10-09"
+    title: "H-LAB canary = pseudo-lab canary (operator approval)"
+    ledger_metric: amendment_a2_pseudo_lab_canary
+    components: [configs/eval/hlab_canary.yaml]
+    effect: "replaces H-LAB canary.artefact lab_specific_noisy_electrodes (inert for a permutation-invariant encoder) by the pseudo-lab canary in configs/eval/hlab_canary.yaml; artefact strength (rate_multiplier) is calibrated once on dev and then frozen for every probe"
+    sealed_at: seal-3

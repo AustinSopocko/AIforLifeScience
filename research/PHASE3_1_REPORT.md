@@ -73,11 +73,15 @@ Per held-out lab:
 **Reading.**
 - The encoder beats the trivial baseline (BL-0) by a wide margin.
 - It **loses to the 2-feature ridge (BL-1) overall**, and the gap is significant against both implementations.
-- The loss is **driven by the Potter fold.** Trained on EPA + Charlesworth, it transfers badly to Wagenaar's dense
-  cultures: worse than BL-0 w, and failing most at DIV 13–39 (cluster-weighted MAE 0.65–0.90 vs BL-1 0.35–0.58).
+- The loss is **driven by the Potter fold**: worse than BL-0 w, and failing most at DIV 13–39 (cluster-weighted MAE
+  0.65–0.90 vs BL-1 0.35–0.58). This is **age extrapolation, not only cross-lab failure.** DIV 13–39 is densely covered
+  by Potter alone. When Potter is held out, the model must predict ages it has barely seen in training (EPA is mostly
+  2–12, Charlesworth 7–29 and sparse). *(Corrected 2026-10-09, operator.)*
+- **On this corpus, LOLO conflates cross-lab generalisation with age extrapolation.** Each lab's age range is partly
+  its own.
 - On Charlesworth it ties BL-1. On EPA it beats the weighted BL-1 and ties the unweighted one.
-- In the **DIV 7–12 overlap stratum the encoder only ties BL-1 w.** Even where the labs overlap in age, no advantage is
-  shown.
+- The **DIV 7–12 overlap stratum is the only clean lab test**: every lab is present and no extrapolation is needed.
+  There the encoder **ties the weighted BL-1** (Δ −0.003 [−0.038, +0.033]).
 
 ## 4. Lab identity (H-LAB) on the final pooled encoder, DIV 7–12
 
@@ -119,7 +123,8 @@ does **not** yet give an age representation that transfers across labs better th
 carries strong lab identity.
 
 Two observations for the next item (not acted on):
-- The Potter failure sits where Potter is most different: dense, high-rate cultures, and the DIV range that only Potter
-  covers densely (13–39). This is the case the option-B sensitivity run is meant to probe.
+- The Potter failure is age extrapolation past the training range: DIV 13–39 is densely covered by Potter alone.
+  *Correction (2026-10-09, operator):* this is **not** what the option-B sampling run tests, because a held-out lab
+  contributes nothing to training under any sampling scheme. The clean cross-lab readout is the DIV 7–12 stratum.
 - BL-1 ties or beats the encoder at DIV 7–12. The encoder's information beyond firing and burst rates is not yet age
   information that survives a change of lab.

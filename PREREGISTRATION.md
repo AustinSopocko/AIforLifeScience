@@ -302,3 +302,21 @@ transfer. Neither the files nor the dataset index state a length.
 unchanged (0.2991 → 0.2992).
 
 **Confirmatory corpora.** The same rule is applied to Fragile-X and Kapucu inside the confirmatory run only.
+
+
+### A2 (2026-10-09): H-LAB canary = pseudo-lab canary
+
+Approved by the operator; it is sealed at Seal 3. The sealed electrode-based canary carries no lab signal for a
+permutation-invariant encoder: every lab gets the same artefact, and electrode identity is invisible by design.
+
+**Design** (`configs/eval/hlab_canary.yaml`):
+- In each seed, a seeded random half of each lab's clusters is canary-positive.
+- In every recording of those clusters, 10% of electrodes get extra Poisson spikes at rate_multiplier × the stratum
+  median electrode rate.
+- The artefact is injected into the raw counts before any input transform, and the encoder is retrained.
+- The probe target is the canary flag, stratified by lab, with permutations within lab.
+- 20 seeds; required power 0.8.
+
+**Strength.** The rate multiplier was 1 in dev 3.1, where power was 0.75 (ledger row 38). It is calibrated **once**, on
+the 3.1 encoder: the smallest of 2/3/4 with 20-seed power ≥ 0.90. It is then **frozen for every probe**, so before and
+after comparisons share one scale.

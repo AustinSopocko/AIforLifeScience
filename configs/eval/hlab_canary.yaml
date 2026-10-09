@@ -1,0 +1,18 @@
+# Amendment A2 to Seal 2 (2026-10-09, operator): H-LAB canary = PSEUDO-LAB canary. Sealed at Seal 3.
+# The sealed electrode-based canary ("in each lab, a seeded random 10% of electrodes get extra spikes") carries no lab
+# signal for a permutation-invariant encoder: every lab gets the same artefact and electrode identity is invisible.
+design:
+  assignment: "per seed, a seeded random half (floor) of each lab's clusters is canary-positive"
+  artefact: "in every recording of a canary-positive cluster, a seeded random 10% of electrodes (Axion 2/16, MCS 6/59-60) get extra Poisson spikes in every bin"
+  rate: "rate_multiplier x stratum median electrode rate (DIV 7-12 dev recordings, non-silent electrodes)"
+  inject_into: training_and_probed_data   # injected into raw counts before any input transform; encoder retrained per seed
+  probe: "group_probe, label = canary flag, strata = lab, 4 outer folds by cluster, 1000 cluster permutations within lab"
+  seeds: 20
+  detection_alpha: 0.05
+  required_power: 0.8
+electrode_fraction: 0.10
+rate_multiplier: null          # FROZEN on dev: smallest ladder value whose 20-seed power >= 0.90 on the 3.1 encoder; then fixed for every probe
+calibration:
+  ladder: [2, 3, 4]            # 3.1 used 1 (power 0.75, ledger row 38)
+  margin_rule: "power >= 0.90 (>= 18/20 seeds) clears 0.8 with margin"
+  encoder: phase3_1_final_architecture   # calibrated once, on the 3.1 encoder; never re-tuned per variant
